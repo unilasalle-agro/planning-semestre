@@ -11,7 +11,8 @@ Une ligne par créneau, avec ces colonnes (l'ordre n'a pas d'importance, les acc
 |---|---|---|
 | Date | oui | `jj/mm/aaaa`, `aaaa-mm-jj` ou vraie date Excel |
 | Module | oui | |
-| UE | non | sert au regroupement, « Sans UE » si absente |
+| groupe | non | champ de regroupement par défaut (voir ci-dessous) |
+| autres colonnes | non | UE, type d'activité, etc. : disponibles dans « Regrouper par » |
 | Début, Fin, Durée en minutes | non | |
 | Type d'activité | non | CM, TD, TP, AF, EXT, EXAMEN_ECRIT, EXAMEN_ORAL… |
 | Libellé | non | utilisé pour les remises |
@@ -20,6 +21,15 @@ Une ligne par créneau, avec ces colonnes (l'ordre n'a pas d'importance, les acc
 - Une ligne de type `REMISE` (ou `RAPPORT`) est une remise de rapport. Elle peut n'avoir que la date, le module et le libellé.
 - CSV : séparateur `;`, `,` ou tabulation détecté automatiquement, UTF-8 ou Windows-1252.
 - Classeur à plusieurs feuilles : un menu permet de choisir la feuille qui contient le tableau.
+
+## Regroupement des modules
+
+Par défaut, les modules sont regroupés selon la colonne nommée `groupe` (ou `Groupe`, `groupes`). Les menus « Regrouper par » et « puis par » permettent de choisir n'importe quelle autre colonne du fichier (UE, type d'activité…), sur un ou deux niveaux. Le choix est mémorisé dans le navigateur.
+
+- **Colonne absente :** les modules ne sont pas regroupés (un seul bloc « Tous les modules ») et la page l'indique. Le regroupement se choisit alors à la main.
+- **Valeur vide :** une ligne sans valeur reprend la valeur la plus fréquente de son module. Un module sans aucune valeur va dans un bloc « Sans groupe » (placé en dernier) et la page le signale.
+- **Valeurs différentes pour un même module :** le module apparaît dans chacun des groupes concernés, avec seulement les séances de ce groupe, et la page le signale.
+- Les lignes `REMISE` saisies à la main n'ont pas besoin de valeur de groupe : elles suivent leur module.
 
 ## Remises de rapports
 

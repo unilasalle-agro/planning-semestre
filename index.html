@@ -62,6 +62,13 @@ button, select, input { font:inherit; color:inherit }
 .row.grp .lab span { position:sticky; left:10px }
 .row.grp .lab { justify-content:flex-start }
 .row.grp { break-after:avoid }
+.bar label { display:inline-flex; align-items:center; gap:4px; font-size:13px; color:var(--muted) }
+.bar select { background:var(--panel); border:1px solid var(--line); border-radius:5px; padding:5px 8px; color:var(--fg); max-width:230px }
+.bar select:disabled { opacity:.5 }
+.row.grp.grp2 { background:var(--panel) }
+.row.grp.grp2 .lab { background:var(--panel); padding-left:24px; text-transform:none; letter-spacing:0; font-size:12.5px; color:var(--fg) }
+.row.grp.grp2 .lab span { left:24px }
+.row.grp.grp2 .span.ue { top:12px; height:6px; opacity:.7 }
 .row.grp .lab em { font-style:normal; font-weight:400; text-transform:none; letter-spacing:0 }
 .lab b { font-size:13.5px; font-weight:500; line-height:1.25; overflow-wrap:break-word }
 .lab small { font-family:var(--f-num); font-size:10.5px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
@@ -159,12 +166,12 @@ td.m { color:var(--muted); font-size:12.5px }
 <div class="wrap">
   <header>
     <h1>Gantt de semestre</h1>
-    <p class="sub noprint">Déposez le planning du semestre (Excel ou CSV). Le Gantt regroupe les modules par UE et fait ressortir les examens et les remises de rapports. Le fichier reste dans votre navigateur et n’est envoyé nulle part.</p>
+    <p class="sub noprint">Déposez le planning du semestre (Excel ou CSV). Le Gantt regroupe les modules selon les colonnes de votre choix (UE par défaut) et fait ressortir les examens et les remises de rapports. Le fichier reste dans votre navigateur et n’est envoyé nulle part.</p>
   </header>
 
   <div class="drop noprint" id="drop" tabindex="0" role="button" aria-label="Choisir un fichier de planning">
     <b>Déposer un fichier .xlsx ou .csv ici, ou cliquer pour le choisir</b>
-    <span>Colonnes attendues : Date, Début, Fin, Durée en minutes, Type d’activité, Module, UE</span>
+    <span>Colonnes obligatoires : Date et Module. Les autres colonnes (UE, groupe, type d’activité…) peuvent servir au regroupement.</span>
     <input id="file" type="file" accept=".xlsx,.xls,.csv,.txt" hidden>
   </div>
   <div id="msg" class="msg noprint" hidden></div>
@@ -174,6 +181,8 @@ td.m { color:var(--muted); font-size:12.5px }
       <div class="bar">
         <span class="filename" id="fname"></span>
         <label id="sheetPick" hidden>Feuille&nbsp;<select id="sheet"></select></label>
+        <label class="noprint">Regrouper par&nbsp;<select id="gb1"></select></label>
+        <label class="noprint">puis par&nbsp;<select id="gb2"></select></label>
         <span class="grow"></span>
         <details class="menu noprint" id="menu">
           <summary class="btn ghost">Exporter ▾</summary>
@@ -203,12 +212,12 @@ td.m { color:var(--muted); font-size:12.5px }
 
       <section>
         <h2>Remises de rapports</h2>
-        <div class="tbl"><table><thead><tr><th>Date</th><th>Module</th><th>UE</th><th>Libellé</th><th>Origine</th><th class="noprint"></th></tr></thead><tbody id="rmBody"></tbody></table></div>
+        <div class="tbl"><table><thead><tr><th>Date</th><th>Module</th><th>Groupe</th><th>Libellé</th><th>Origine</th><th class="noprint"></th></tr></thead><tbody id="rmBody"></tbody></table></div>
       </section>
 
       <section>
         <h2>Examens, par date</h2>
-        <div class="tbl"><table><thead><tr><th>Date</th><th>Horaire</th><th>Module</th><th>UE</th><th>Format</th></tr></thead><tbody id="exBody"></tbody></table></div>
+        <div class="tbl"><table><thead><tr><th>Date</th><th>Horaire</th><th>Module</th><th>Groupe</th><th>Format</th></tr></thead><tbody id="exBody"></tbody></table></div>
         <p class="note" id="noExam"></p>
       </section>
 
@@ -232,6 +241,7 @@ var JOURS = ["dim.","lun.","mar.","mer.","jeu.","ven.","sam."];
 var TYPES_COURS = ["CM","TD","TP","AF","EXT"];
 var LS_REM = "gantt-semestre:remises";
 var LS_EXT = "gantt-semestre:types-examen";
+var LS_GB = "gantt-semestre:regroupement";
 
 var $ = function (s) { return document.querySelector(s); };
 function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
@@ -321,6 +331,13 @@ function readBook(buf, name) {
 }
 function extract(sheet) {
   var t = sheet.tbl, m = t.map, recs = [], skipped = [];
+  var headers = (sheet.aoa[t.start - 1] || []).map(function (h) { return String(h == null ? "" : h).trim(); });
+  var fields = [], fidx = [];
+  headers.forEach(function (h, i) {
+    if (!h || i === m.date || i === m.debut || i === m.fin || i === m.duree || i === m.module) return;
+    if (fields.indexOf(h) >= 0) return;
+    fields.push(h); fidx.push(i);
+  });
   for (var i = t.start; i < sheet.aoa.length; i++) {
     var r = sheet.aoa[i];
     if (!r.some(function (x) { return String(x).trim() !== ""; })) continue;
@@ -328,25 +345,46 @@ function extract(sheet) {
     var mod = m.module != null ? String(r[m.module]).trim() : "";
     if (d == null || !mod) { skipped.push(i + 1); continue; }
     var typ = m.type != null ? String(r[m.type]).trim().toUpperCase() : "";
-    var dur = m.duree != null ? r[m.duree] : "";
+    var f = {};
+    fields.forEach(function (h, k) { var v = r[fidx[k]]; f[h] = v == null ? "" : String(v).trim(); });
     recs.push({
       d: d, deb: m.debut != null ? parseTime(r[m.debut]) : "", fin: m.fin != null ? parseTime(r[m.fin]) : "",
-      dur: dur, typ: typ, mod: mod, ue: m.ue != null && String(r[m.ue]).trim() ? String(r[m.ue]).trim() : "Sans UE",
-      lib: m.lib != null ? String(r[m.lib]).trim() : ""
+      typ: typ, mod: mod, lib: m.lib != null ? String(r[m.lib]).trim() : "", f: f, raw: r.slice(0, headers.length)
     });
   }
-  return { recs: recs, skipped: skipped };
+  return { recs: recs, skipped: skipped, headers: headers, fields: fields, map: m };
 }
 
 /* ---------- état ---------- */
-var S = { name: "", book: null, sheetIx: 0, recs: [], skipped: [], examTypes: null, own: [] };
+var S = { name: "", book: null, sheetIx: 0, recs: [], skipped: [], examTypes: null, own: [], headers: [], fields: [], map: {}, groupBy: [] };
 
 function lsGet(k, def) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : def; } catch (e) { return def; } }
 function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
 S.own = lsGet(LS_REM, []);
 
 function isRemiseType(t) { return t === "REMISE" || t === "RAPPORT"; }
-function ueRank(u) { var m = u.match(/^UE\s*(\d+)/i); return m ? [0, +m[1]] : [1, 0]; }
+function emptyLabel(f) { return "Sans " + (norm(f) === "ue" ? "UE" : String(f).toLowerCase()); }
+function isGroupeField(f) { return /^groupes?$/.test(norm(f)); }
+function ueRank(u) { if (/^Sans /.test(u)) return [2, 0]; var m = u.match(/^UE\s*(\d+)/i); return m ? [0, +m[1]] : [1, 0]; }
+function sortNames(a) {
+  return a.slice().sort(function (x, y) {
+    var rx = ueRank(x), ry = ueRank(y);
+    return rx[0] - ry[0] || rx[1] - ry[1] || x.localeCompare(y, "fr", { numeric: true });
+  });
+}
+function defaultGroupBy() {
+  var saved = lsGet(LS_GB, null), ok = [];
+  if (saved) saved.forEach(function (f) { if (S.fields.indexOf(f) >= 0 && ok.indexOf(f) < 0) ok.push(f); });
+  if (ok.length) return ok.slice(0, 2);
+  var g = S.fields.filter(isGroupeField)[0];
+  return g ? [g] : [];
+}
+function fillGb() {
+  var opts = function (sel) { return '<option value="">(aucun)</option>' + S.fields.map(function (f) { return '<option value="' + esc(f) + '"' + (f === sel ? " selected" : "") + ">" + esc(f) + "</option>"; }).join(""); };
+  $("#gb1").innerHTML = opts(S.groupBy[0] || "");
+  $("#gb2").innerHTML = opts(S.groupBy[1] || "");
+  $("#gb2").disabled = !S.groupBy[0];
+}
 
 /* ---------- rendu ---------- */
 function build() {
@@ -359,17 +397,31 @@ function build() {
   }
   var isEx = function (t) { return S.examTypes.indexOf(t) >= 0; };
 
-  var mods = {}, order = [];
+  var gb = S.groupBy.filter(function (f) { return f && S.fields.indexOf(f) >= 0; });
+  /* une ligne sans valeur reprend la valeur la plus fréquente de son module ; sans aucune valeur : « Sans … » */
+  var common = {};
+  gb.forEach(function (f) {
+    var cnt = {}, best = {};
+    recs.forEach(function (r) { var v = String(r.f[f] == null ? "" : r.f[f]).trim(); if (!v) return; var c = cnt[r.mod] = cnt[r.mod] || {}; c[v] = (c[v] || 0) + 1; });
+    Object.keys(cnt).forEach(function (m) { var bv = null, bc = 0; Object.keys(cnt[m]).forEach(function (v) { if (cnt[m][v] > bc) { bc = cnt[m][v]; bv = v; } }); best[m] = bv; });
+    common[f] = best;
+  });
+  var pathOf = function (r) {
+    if (!gb.length) return ["Tous les modules"];
+    return gb.map(function (f) { var v = String(r.f[f] == null ? "" : r.f[f]).trim(); return v || common[f][r.mod] || emptyLabel(f); });
+  };
+  var mods = {}, order = [], byName = {};
   recs.forEach(function (r) {
-    if (!mods[r.mod]) { mods[r.mod] = { name: r.mod, ue: r.ue, sess: [], rem: [] }; order.push(r.mod); }
-    var M = mods[r.mod];
+    var p = pathOf(r), key = p.join("\u0001") + "\u0002" + r.mod;
+    if (!mods[key]) { mods[key] = { key: key, name: r.mod, path: p, sess: [], rem: [] }; order.push(key); (byName[r.mod] = byName[r.mod] || []).push(mods[key]); }
+    var M = mods[key];
     if (isRemiseType(r.typ)) M.rem.push({ d: r.d, lab: r.lib || "Remise", own: false });
     else M.sess.push(r);
   });
   var orphan = 0;
   S.own.forEach(function (o) {
-    var d = parseDate(o.date);
-    if (mods[o.module] && d != null) mods[o.module].rem.push({ d: d, lab: o.label, own: true, id: o.id });
+    var d = parseDate(o.date), list = byName[o.module];
+    if (list && d != null) list.forEach(function (M) { M.rem.push({ d: d, lab: o.label, own: true, id: o.id }); });
     else orphan++;
   });
 
@@ -381,13 +433,8 @@ function build() {
   var dend = dmax + (7 - ((ymd(dmax).w + 6) % 7) - 1);
   var N = dend - d0 + 1, idx = function (d) { return d - d0; };
   var dw = "var(--dw)";
-
-  var ues = {}; order.forEach(function (k) { (ues[mods[k].ue] = ues[mods[k].ue] || []).push(mods[k]); });
-  var ueNames = Object.keys(ues).sort(function (a, b) {
-    var ra = ueRank(a), rb = ueRank(b);
-    return ra[0] - rb[0] || ra[1] - rb[1] || a.localeCompare(b, "fr");
-  });
   var first = function (M) { var a = M.sess.map(function (s) { return s.d; }).concat(M.rem.map(function (x) { return x.d; })); return Math.min.apply(null, a); };
+  var sortMods = function (l) { return l.slice().sort(function (a, b) { return first(a) - first(b); }); };
 
   var head = "", cur = d0;
   while (cur <= dend) {
@@ -398,62 +445,81 @@ function build() {
   for (var w = 0; w < N / 7; w++) head += '<div class="wk" style="left:calc(' + dw + '*' + (w * 7) + ')">' + ymd(d0 + w * 7).d + "</div>";
 
   var tw = 'width:calc(' + dw + '*' + N + ')';
-  var html = '<div class="row hdr"><div class="lab">UE · module</div><div class="trk" style="' + tw + '">' + head + "</div></div>";
-  var exams = [], rems = [], nbEx = 0;
+  var gl = gb.length ? gb.join(" › ") + " · module" : "Module";
+  var html = '<div class="row hdr"><div class="lab">' + esc(gl) + '</div><div class="trk" style="' + tw + '">' + head + "</div></div>";
+  var exams = [], rems = [], seenOwn = {}, nbEx = 0;
 
-  ueNames.forEach(function (u) {
-    var ms = ues[u].slice().sort(function (a, b) { return first(a) - first(b); });
-    var ds = []; ms.forEach(function (M) { M.sess.forEach(function (s) { ds.push(s.d); }); M.rem.forEach(function (x) { ds.push(x.d); }); });
+  function moduleRow(M) {
+    var byDay = {};
+    M.sess.forEach(function (s) { (byDay[s.d] = byDay[s.d] || []).push(s); });
+    var days = Object.keys(byDay).map(Number).sort(function (x, y) { return x - y; });
+    var ticks = "", exd = [];
+    days.forEach(function (d) {
+      var lst = byDay[d].slice().sort(function (x, y) { return x.deb < y.deb ? -1 : 1; });
+      var tip = lst.map(function (s) { return s.typ + (s.deb ? " " + s.deb + "–" + s.fin : ""); }).join("; ");
+      tip = fdl(d) + " · " + tip;
+      var ty = []; lst.forEach(function (s) { if (!isEx(s.typ) && ty.indexOf(s.typ) < 0) ty.push(s.typ); });
+      ty.sort(function (x, y) { var ix = TYPES_COURS.indexOf(x), iy = TYPES_COURS.indexOf(y); return (ix < 0 ? 9 : ix) - (iy < 0 ? 9 : iy); });
+      if (ty.length) ticks += '<div class="day" style="left:calc(' + dw + '*' + idx(d) + ')" title="' + esc(tip) + '">' +
+        ty.map(function (t) { return '<i class="t-' + (TYPES_COURS.indexOf(t) >= 0 ? t : "AUTRE") + '"></i>'; }).join("") + "</div>";
+      var ex = lst.filter(function (s) { return isEx(s.typ); });
+      if (ex.length) {
+        exd.push({ d: d, ex: ex, tip: tip });
+        ex.forEach(function (s) { exams.push({ d: d, deb: s.deb, fin: s.fin, typ: s.typ, mod: M.name, ue: M.path.join(" › ") }); nbEx++; });
+      }
+    });
+    var cl = [];
+    exd.forEach(function (x) { var l = cl[cl.length - 1]; if (l && x.d - l[l.length - 1].d <= 3) l.push(x); else cl.push([x]); });
+    var marks = "";
+    cl.forEach(function (c) {
+      c.forEach(function (x) { marks += '<div class="exm' + '" data-d="' + x.d + '" style="left:calc(' + dw + '*' + idx(x.d) + ' - 1px)" title="' + esc(x.tip) + '"></div>'; });
+      var a = c[0].d, b = c[c.length - 1].d, f = {};
+      c.forEach(function (x) { x.ex.forEach(function (s) { f[s.typ === "EXAMEN_ECRIT" ? "Écrit" : s.typ === "EXAMEN_ORAL" ? "Oral" : s.typ] = 1; }); });
+      var txt = Object.keys(f).sort().join("/") + " · " + (a === b ? fd(a) : ymd(a).d + "–" + ymd(b).d + " " + MOIS[ymd(b).m - 1]);
+      var mid = (idx(a) + idx(b)) / 2, pos = mid > N - 14 ? "r" : mid < 6 ? "l" : "c";
+      marks += '<div class="exl ' + pos + '" data-d="' + b + '" style="left:calc(' + dw + '*' + mid + ' + ' + dw + '/2)">' + esc(txt) + "</div>";
+    });
+    M.rem.forEach(function (x) {
+      var pos = idx(x.d) > N - 14 ? "r" : idx(x.d) < 6 ? "l" : "c";
+      marks += '<div class="rmk" data-d="' + x.d + '" style="left:calc(' + dw + '*' + idx(x.d) + ')" title="' + esc(fdl(x.d) + " · " + x.lab) + '"></div>' +
+        '<div class="rml ' + pos + '" data-d="' + x.d + '" style="left:calc(' + dw + '*' + idx(x.d) + ')">' + esc(x.lab + " · " + fd(x.d)) + "</div>";
+      if (x.own) { if (seenOwn[x.id]) return; seenOwn[x.id] = 1; }
+      rems.push({ d: x.d, mod: M.name, ue: M.path.join(" › "), lab: x.lab, own: x.own, id: x.id });
+    });
+    var span = "", meta = "";
+    if (M.sess.length) {
+      var f0 = Math.min.apply(null, M.sess.map(function (s) { return s.d; })), l0 = Math.max.apply(null, M.sess.map(function (s) { return s.d; }));
+      span = '<div class="span" style="left:calc(' + dw + '*' + idx(f0) + ');width:calc(' + dw + '*' + (l0 - f0 + 1) + ')"></div>';
+      meta = M.sess.length + " créneaux · " + fd(f0) + " → " + fd(l0);
+    } else meta = "aucun cours dans le fichier";
+    return '<div class="row"><div class="lab"><b>' + esc(M.name) + "</b><small>" + meta + '</small></div><div class="trk" style="' + tw + '">' + span + ticks + marks + "</div></div>";
+
+  }
+  function grpRow(label, cls, ents) {
+    var ds = []; ents.forEach(function (M) { M.sess.forEach(function (s) { ds.push(s.d); }); M.rem.forEach(function (x) { ds.push(x.d); }); });
     var a = Math.min.apply(null, ds), b = Math.max.apply(null, ds);
-    html += '<div class="row grp"><div class="lab"><span>' + esc(u) + " <em>· " + ms.length + " module" + (ms.length > 1 ? "s" : "") + '</em></span></div><div class="trk" style="' + tw +
+    return '<div class="row grp' + cls + '"><div class="lab"><span>' + esc(label) + " <em>· " + ents.length + " module" + (ents.length > 1 ? "s" : "") + '</em></span></div><div class="trk" style="' + tw +
       '"><div class="span ue" style="left:calc(' + dw + '*' + idx(a) + ');width:calc(' + dw + '*' + (b - a + 1) + ')"></div></div></div>';
-    ms.forEach(function (M) {
-      var byDay = {};
-      M.sess.forEach(function (s) { (byDay[s.d] = byDay[s.d] || []).push(s); });
-      var days = Object.keys(byDay).map(Number).sort(function (x, y) { return x - y; });
-      var ticks = "", exd = [];
-      days.forEach(function (d) {
-        var lst = byDay[d].slice().sort(function (x, y) { return x.deb < y.deb ? -1 : 1; });
-        var tip = lst.map(function (s) { return s.typ + (s.deb ? " " + s.deb + "–" + s.fin : ""); }).join("; ");
-        tip = fdl(d) + " · " + tip;
-        var ty = []; lst.forEach(function (s) { if (!isEx(s.typ) && ty.indexOf(s.typ) < 0) ty.push(s.typ); });
-        ty.sort(function (x, y) { var ix = TYPES_COURS.indexOf(x), iy = TYPES_COURS.indexOf(y); return (ix < 0 ? 9 : ix) - (iy < 0 ? 9 : iy); });
-        if (ty.length) ticks += '<div class="day" style="left:calc(' + dw + '*' + idx(d) + ')" title="' + esc(tip) + '">' +
-          ty.map(function (t) { return '<i class="t-' + (TYPES_COURS.indexOf(t) >= 0 ? t : "AUTRE") + '"></i>'; }).join("") + "</div>";
-        var ex = lst.filter(function (s) { return isEx(s.typ); });
-        if (ex.length) {
-          exd.push({ d: d, ex: ex, tip: tip });
-          ex.forEach(function (s) { exams.push({ d: d, deb: s.deb, fin: s.fin, typ: s.typ, mod: M.name, ue: M.ue }); nbEx++; });
-        }
-      });
-      var cl = [];
-      exd.forEach(function (x) { var l = cl[cl.length - 1]; if (l && x.d - l[l.length - 1].d <= 3) l.push(x); else cl.push([x]); });
-      var marks = "";
-      cl.forEach(function (c) {
-        c.forEach(function (x) { marks += '<div class="exm' + '" data-d="' + x.d + '" style="left:calc(' + dw + '*' + idx(x.d) + ' - 1px)" title="' + esc(x.tip) + '"></div>'; });
-        var a = c[0].d, b = c[c.length - 1].d, f = {};
-        c.forEach(function (x) { x.ex.forEach(function (s) { f[s.typ === "EXAMEN_ECRIT" ? "Écrit" : s.typ === "EXAMEN_ORAL" ? "Oral" : s.typ] = 1; }); });
-        var txt = Object.keys(f).sort().join("/") + " · " + (a === b ? fd(a) : ymd(a).d + "–" + ymd(b).d + " " + MOIS[ymd(b).m - 1]);
-        var mid = (idx(a) + idx(b)) / 2, pos = mid > N - 14 ? "r" : mid < 6 ? "l" : "c";
-        marks += '<div class="exl ' + pos + '" data-d="' + b + '" style="left:calc(' + dw + '*' + mid + ' + ' + dw + '/2)">' + esc(txt) + "</div>";
-      });
-      M.rem.forEach(function (x) {
-        var pos = idx(x.d) > N - 14 ? "r" : idx(x.d) < 6 ? "l" : "c";
-        marks += '<div class="rmk" data-d="' + x.d + '" style="left:calc(' + dw + '*' + idx(x.d) + ')" title="' + esc(fdl(x.d) + " · " + x.lab) + '"></div>' +
-          '<div class="rml ' + pos + '" data-d="' + x.d + '" style="left:calc(' + dw + '*' + idx(x.d) + ')">' + esc(x.lab + " · " + fd(x.d)) + "</div>";
-        rems.push({ d: x.d, mod: M.name, ue: M.ue, lab: x.lab, own: x.own, id: x.id });
-      });
-      var span = "", meta = "";
-      if (M.sess.length) {
-        var f0 = Math.min.apply(null, M.sess.map(function (s) { return s.d; })), l0 = Math.max.apply(null, M.sess.map(function (s) { return s.d; }));
-        span = '<div class="span" style="left:calc(' + dw + '*' + idx(f0) + ');width:calc(' + dw + '*' + (l0 - f0 + 1) + ')"></div>';
-        meta = M.sess.length + " créneaux · " + fd(f0) + " → " + fd(l0);
-      } else meta = "aucun cours dans le fichier";
-      html += '<div class="row"><div class="lab"><b>' + esc(M.name) + "</b><small>" + meta + '</small></div><div class="trk" style="' + tw + '">' + span + ticks + marks + "</div></div>";
+  }
+  var tree = {};
+  order.forEach(function (k) {
+    var M = mods[k], a = M.path[0], g = tree[a] = tree[a] || { subs: {}, direct: [] };
+    if (M.path.length > 1) (g.subs[M.path[1]] = g.subs[M.path[1]] || []).push(M); else g.direct.push(M);
+  });
+  var flat = [];
+  sortNames(Object.keys(tree)).forEach(function (a) {
+    var g = tree[a], subNames = sortNames(Object.keys(g.subs)), all1 = g.direct.slice();
+    subNames.forEach(function (b) { all1 = all1.concat(g.subs[b]); });
+    html += grpRow(a, "", all1);
+    if (g.direct.length) { sortMods(g.direct).forEach(function (M) { html += moduleRow(M); }); flat.push({ label: a, entries: sortMods(g.direct) }); }
+    subNames.forEach(function (b) {
+      html += grpRow(b, " grp2", g.subs[b]);
+      sortMods(g.subs[b]).forEach(function (M) { html += moduleRow(M); });
+      flat.push({ label: a + " › " + b, entries: sortMods(g.subs[b]) });
     });
   });
   html += '<div class="todayline" id="today" style="display:none"></div>';
-  return { html: html, N: N, d0: d0, exams: exams, rems: rems, mods: mods, order: order, ueNames: ueNames, ues: ues, types: types, orphan: orphan, nbEx: nbEx };
+  return { html: html, N: N, d0: d0, exams: exams, rems: rems, mods: mods, order: order, byName: byName, names: Object.keys(byName), flat: flat, gb: gb, types: types, orphan: orphan, nbEx: nbEx };
 }
 
 function render() {
@@ -478,8 +544,8 @@ function render() {
   $("#legend").innerHTML = leg + '<span><i class="sw ex"></i>Examen</span><span><i class="sw rm"></i>Remise de rapport</span><span><i class="sw td"></i>Aujourd’hui</span>';
 
   var sel = $("#fMod"), keep = sel.value;
-  sel.innerHTML = B.ueNames.map(function (u) {
-    return '<optgroup label="' + esc(u) + '">' + B.ues[u].map(function (M) { return '<option value="' + esc(M.name) + '">' + esc(M.name) + "</option>"; }).join("") + "</optgroup>";
+  sel.innerHTML = B.flat.map(function (g) {
+    return '<optgroup label="' + esc(g.label) + '">' + g.entries.map(function (M) { return '<option value="' + esc(M.name) + '">' + esc(M.name) + "</option>"; }).join("") + "</optgroup>";
   }).join("");
   if (keep) sel.value = keep;
 
@@ -495,7 +561,7 @@ function render() {
     return '<tr class="' + (e.d < todayN ? "past" : "") + '"><td class="n">' + fdl(e.d) + '</td><td class="n">' + (e.deb ? e.deb + "–" + e.fin : "") + "</td><td><b>" + esc(e.mod) +
       '</b></td><td class="m">' + esc(e.ue) + '</td><td><span class="pill">' + (e.typ === "EXAMEN_ECRIT" ? "Écrit" : e.typ === "EXAMEN_ORAL" ? "Oral" : esc(e.typ)) + "</span></td></tr>";
   }).join("") : '<tr><td colspan="5" class="m">Aucun examen avec les types cochés ci-dessous.</td></tr>';
-  var noEx = B.order.filter(function (k) { return !B.exams.some(function (e) { return e.mod === k; }); });
+  var noEx = B.names.filter(function (n) { return !B.exams.some(function (e) { return e.mod === n; }); });
   $("#noExam").textContent = noEx.length ? "Aucun examen dans le fichier pour : " + noEx.join(", ") + "." : "";
 
   $("#types").innerHTML = B.types.map(function (t, k) {
@@ -504,6 +570,17 @@ function render() {
 
   var notes = [];
   if (S.skipped.length) notes.push(S.skipped.length + " ligne(s) ignorée(s) car sans date lisible ou sans module (lignes " + S.skipped.slice(0, 8).join(", ") + (S.skipped.length > 8 ? "…" : "") + ").");
+  var hasG = S.fields.some(isGroupeField);
+  if (!hasG && !B.gb.length) notes.push("Aucune colonne « groupe » dans ce fichier : les modules ne sont pas regroupés. Choisissez un autre champ avec « Regrouper par ».");
+  if (B.gb.length) {
+    var lab0 = emptyLabel(B.gb[0]), nm = {}, multi = {};
+    B.order.forEach(function (k) { var M = B.mods[k]; if (M.path[0] === lab0) nm[M.name] = 1; });
+    var nNo = Object.keys(nm).length;
+    if (nNo && nNo === B.names.length) notes.push("Le champ « " + B.gb[0] + " » n’est renseigné pour aucun module : ils sont tous dans « " + lab0 + " ».");
+    else if (nNo) notes.push(nNo + " module(s) sans valeur pour « " + B.gb[0] + " », classés dans « " + lab0 + " » : " + Object.keys(nm).slice(0, 6).join(", ") + (nNo > 6 ? "…" : "") + ".");
+    var split = B.names.filter(function (n) { return B.byName[n].length > 1; });
+    if (split.length) notes.push(split.length + " module(s) ont des valeurs différentes selon les séances et apparaissent dans plusieurs groupes : " + split.slice(0, 4).join(", ") + (split.length > 4 ? "…" : "") + ".");
+  }
   if (B.orphan) notes.push(B.orphan + " remise(s) mémorisée(s) concernent des modules absents de ce fichier. Elles sont conservées mais non affichées.");
   showMsg(notes);
   S.B = B;
@@ -521,6 +598,8 @@ function useSheet(ix) {
   if (!sh || !sh.tbl) { showMsg(["Cette feuille ne contient pas de colonnes « Date » et « Module »."]); $("#app").hidden = true; return; }
   var x = extract(sh);
   S.sheetIx = ix; S.recs = x.recs; S.skipped = x.skipped; S.examTypes = null;
+  S.headers = x.headers; S.fields = x.fields; S.map = x.map;
+  S.groupBy = defaultGroupBy(); fillGb();
   render();
 }
 function load(file) {
@@ -543,21 +622,31 @@ function load(file) {
 function exportXlsx() {
   var B = S.B; if (!B) return;
   if (typeof XLSX === "undefined") { showMsg(["Export impossible : la bibliothèque Excel n’est pas chargée (dossier vendor manquant ?)."]); return; }
-  var head = ["Date", "Début", "Fin", "Durée en minutes", "Type d'activité", "Module", "UE", "Libellé"];
-  var aoa = [head], serial = function (n) { return n + 25569; };
-  var rows = S.recs.slice().sort(function (a, b) { return a.d - b.d || (a.deb < b.deb ? -1 : 1); });
-  rows.forEach(function (r) { aoa.push([{ t: "n", v: serial(r.d), z: "dd/mm/yyyy" }, r.deb, r.fin, r.dur, r.typ, r.mod, r.ue, r.lib]); });
-  var known = {}; B.rems.forEach(function (r) { if (r.own) known[r.id] = r; });
+  var m = S.map, head = S.headers.slice();
+  var ti = m.type, li = m.lib;
+  if (ti == null) { ti = head.length; head.push("Type d'activité"); }
+  if (li == null) { li = head.length; head.push("Libellé"); }
+  var n = head.length, serial = function (d) { return d + 25569; }, dcell = function (v) { return { t: "n", v: v, z: "dd/mm/yyyy" }; };
+  var aoa = [head];
+  S.recs.forEach(function (r) {
+    var row = r.raw.slice(); while (row.length < n) row.push("");
+    if (typeof row[m.date] === "number") row[m.date] = dcell(row[m.date]);
+    aoa.push(row);
+  });
   S.own.forEach(function (o) {
-    var d = parseDate(o.date), M = B.mods[o.module]; if (d == null || !M) return;
-    aoa.push([{ t: "n", v: serial(d), z: "dd/mm/yyyy" }, "", "", "", "REMISE", o.module, M.ue, o.label]);
+    var d = parseDate(o.date), list = B.byName[o.module]; if (d == null || !list) return;
+    list.forEach(function (M) {
+      var row = []; for (var k = 0; k < n; k++) row.push("");
+      row[m.date] = dcell(serial(d)); row[m.module] = o.module; row[ti] = "REMISE"; row[li] = o.label;
+      B.gb.forEach(function (f, i) { var c = S.headers.indexOf(f); if (c >= 0 && M.path[i] && M.path[i] !== emptyLabel(f)) row[c] = M.path[i]; });
+      aoa.push(row);
+    });
   });
   var ws = XLSX.utils.aoa_to_sheet(aoa);
-  ws["!cols"] = [{ wch: 12 }, { wch: 8 }, { wch: 8 }, { wch: 10 }, { wch: 16 }, { wch: 50 }, { wch: 14 }, { wch: 24 }];
+  ws["!cols"] = head.map(function (h, c) { return { wch: c === m.module ? 46 : c === m.date ? 12 : 16 }; });
   var wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
   XLSX.writeFile(wb, S.name.replace(/\.[^.]+$/, "") + "_avec_remises.xlsx");
 }
-
 
 /* ---------- export en image (fond blanc) ---------- */
 function exportImage(fmt) {
@@ -613,6 +702,13 @@ fin.addEventListener("change", function () { if (fin.files[0]) load(fin.files[0]
 ["dragleave", "drop"].forEach(function (n) { drop.addEventListener(n, function (e) { e.preventDefault(); drop.classList.remove("over"); }); });
 drop.addEventListener("drop", function (e) { var f = e.dataTransfer.files[0]; if (f) load(f); });
 $("#sheet").addEventListener("change", function (e) { useSheet(+e.target.value); });
+function onGb() {
+  var a = $("#gb1").value, b = $("#gb2").value;
+  S.groupBy = !a ? [] : (b && b !== a ? [a, b] : [a]);
+  lsSet(LS_GB, S.groupBy); fillGb(); render();
+}
+$("#gb1").addEventListener("change", onGb);
+$("#gb2").addEventListener("change", onGb);
 $("#menu").addEventListener("click", function (e) {
   var b = e.target.closest ? e.target.closest("[data-exp]") : null; if (!b) return;
   var k = b.getAttribute("data-exp");
