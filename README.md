@@ -31,6 +31,10 @@ Par défaut, les modules sont regroupés selon la colonne nommée `groupe` (ou `
 - **Valeurs différentes pour un même module :** le module apparaît dans chacun des groupes concernés, avec seulement les séances de ce groupe, et la page le signale.
 - Les lignes `REMISE` saisies à la main n'ont pas besoin de valeur de groupe : elles suivent leur module.
 
+## Titre
+
+Le champ « Titre » de la barre du haut définit le titre affiché au-dessus du Gantt, repris dans l'image exportée et dans le PDF. Vide, le titre est « Gantt de semestre ». Il est mémorisé dans le navigateur pour chaque nom de fichier.
+
 ## Remises de rapports
 
 Le formulaire de la page ajoute une remise (module, date, libellé). Elle est mémorisée dans le navigateur (`localStorage`), sur cet ordinateur seulement.

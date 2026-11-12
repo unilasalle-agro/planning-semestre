@@ -65,6 +65,8 @@ button, select, input { font:inherit; color:inherit }
 .bar label { display:inline-flex; align-items:center; gap:4px; font-size:13px; color:var(--muted) }
 .bar select { background:var(--panel); border:1px solid var(--line); border-radius:5px; padding:5px 8px; color:var(--fg); max-width:230px }
 .bar select:disabled { opacity:.5 }
+.bar input[type="text"] { background:var(--panel); border:1px solid var(--line); border-radius:5px; padding:5px 8px; color:var(--fg); width:min(320px,100%) }
+.chart-title { font-size:20px; line-height:1.2; margin:0; font-weight:700; text-wrap:balance; overflow-wrap:anywhere }
 .row.grp.grp2 { background:var(--panel) }
 .row.grp.grp2 .lab { background:var(--panel); padding-left:24px; text-transform:none; letter-spacing:0; font-size:12.5px; color:var(--fg) }
 .row.grp.grp2 .lab span { left:24px }
@@ -164,7 +166,7 @@ td.m { color:var(--muted); font-size:12.5px }
 </head>
 <body>
 <div class="wrap">
-  <header>
+  <header class="noprint">
     <h1>Gantt de semestre</h1>
     <p class="sub noprint">Déposez le planning du semestre (Excel ou CSV). Le Gantt regroupe les modules selon les colonnes de votre choix (UE par défaut) et fait ressortir les examens et les remises de rapports. Le fichier reste dans votre navigateur et n’est envoyé nulle part.</p>
   </header>
@@ -180,9 +182,10 @@ td.m { color:var(--muted); font-size:12.5px }
     <div class="wrap">
       <div class="bar">
         <span class="filename" id="fname"></span>
-        <label id="sheetPick" hidden>Feuille&nbsp;<select id="sheet"></select></label>
+        <label id="sheetPick" class="noprint" hidden>Feuille&nbsp;<select id="sheet"></select></label>
         <label class="noprint">Regrouper par&nbsp;<select id="gb1"></select></label>
         <label class="noprint">puis par&nbsp;<select id="gb2"></select></label>
+        <label class="noprint">Titre&nbsp;<input id="gtitle" type="text" maxlength="90" placeholder="Gantt de semestre" autocomplete="off"></label>
         <span class="grow"></span>
         <details class="menu noprint" id="menu">
           <summary class="btn ghost">Exporter ▾</summary>
@@ -195,6 +198,7 @@ td.m { color:var(--muted); font-size:12.5px }
         </details>
       </div>
 
+      <h2 class="chart-title" id="chartTitle"></h2>
       <div class="legend" id="legend"></div>
       <div class="chart-box"><div class="chart" id="chart"></div></div>
       <p class="note noprint">Chaque colonne est un jour, chaque trait un jour de cours. Survolez un jour pour voir les horaires. « Créneaux » compte les lignes du fichier, groupes parallèles inclus. Les chiffres sous l’axe des mois sont les lundis.</p>
@@ -242,6 +246,7 @@ var TYPES_COURS = ["CM","TD","TP","AF","EXT"];
 var LS_REM = "gantt-semestre:remises";
 var LS_EXT = "gantt-semestre:types-examen";
 var LS_GB = "gantt-semestre:regroupement";
+var LS_TITLE = "gantt-semestre:titres";
 
 var $ = function (s) { return document.querySelector(s); };
 function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
@@ -356,7 +361,7 @@ function extract(sheet) {
 }
 
 /* ---------- état ---------- */
-var S = { name: "", book: null, sheetIx: 0, recs: [], skipped: [], examTypes: null, own: [], headers: [], fields: [], map: {}, groupBy: [] };
+var S = { name: "", book: null, sheetIx: 0, recs: [], skipped: [], examTypes: null, own: [], title: "", headers: [], fields: [], map: {}, groupBy: [] };
 
 function lsGet(k, def) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : def; } catch (e) { return def; } }
 function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
@@ -378,6 +383,12 @@ function defaultGroupBy() {
   if (ok.length) return ok.slice(0, 2);
   var g = S.fields.filter(isGroupeField)[0];
   return g ? [g] : [];
+}
+function titleText() { return S.title.trim() || "Gantt de semestre"; }
+function updateTitle() { $("#chartTitle").textContent = titleText(); }
+function loadTitle() {
+  var all = lsGet(LS_TITLE, {}); S.title = (all && all[S.name]) || "";
+  $("#gtitle").value = S.title; updateTitle();
 }
 function fillGb() {
   var opts = function (sel) { return '<option value="">(aucun)</option>' + S.fields.map(function (f) { return '<option value="' + esc(f) + '"' + (f === sel ? " selected" : "") + ">" + esc(f) + "</option>"; }).join(""); };
@@ -599,6 +610,7 @@ function useSheet(ix) {
   var x = extract(sh);
   S.sheetIx = ix; S.recs = x.recs; S.skipped = x.skipped; S.examTypes = null;
   S.headers = x.headers; S.fields = x.fields; S.map = x.map;
+  loadTitle();
   S.groupBy = defaultGroupBy(); fillGb();
   render();
 }
@@ -655,7 +667,7 @@ function exportImage(fmt) {
   var host = document.createElement("div");
   host.className = "force-light";
   host.style.cssText = "position:absolute;left:-100000px;top:0;background:#fff;color:#1b2330;padding:18px;font-family:var(--f-ui);width:max-content";
-  var title = document.createElement("div"); title.className = "exp-title"; title.textContent = "Gantt de semestre";
+  var title = document.createElement("div"); title.className = "exp-title"; title.textContent = titleText();
   var sub = document.createElement("div"); sub.className = "exp-sub";
   sub.textContent = S.name + " · édité le " + fdl(dayOf(new Date().getFullYear(), new Date().getMonth() + 1, new Date().getDate()));
   var leg = $("#legend").cloneNode(true); leg.removeAttribute("id"); leg.classList.add("exp-legend");
@@ -707,6 +719,12 @@ function onGb() {
   S.groupBy = !a ? [] : (b && b !== a ? [a, b] : [a]);
   lsSet(LS_GB, S.groupBy); fillGb(); render();
 }
+$("#gtitle").addEventListener("input", function (e) {
+  S.title = e.target.value; updateTitle();
+  var all = lsGet(LS_TITLE, {}); if (!all || typeof all !== "object") all = {};
+  if (S.title.trim()) all[S.name] = S.title; else delete all[S.name];
+  lsSet(LS_TITLE, all);
+});
 $("#gb1").addEventListener("change", onGb);
 $("#gb2").addEventListener("change", onGb);
 $("#menu").addEventListener("click", function (e) {
