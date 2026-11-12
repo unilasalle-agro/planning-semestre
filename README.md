@@ -1,6 +1,6 @@
 # Gantt de semestre
 
-Page web statique : on dépose le planning d'un semestre (.xlsx ou .csv), elle affiche un Gantt par module, regroupé par UE, avec les examens en rouge et les remises de rapports en losanges.
+Page web statique : on dépose le planning d'un semestre (.xlsx ou .csv), elle affiche un Gantt par module, regroupé selon le champ « groupe » (ou une autre colonne au choix), avec les examens en rouge et les remises de rapports en losanges.
 Tout se passe dans le navigateur : le fichier n'est envoyé nulle part.
 
 ## Format du fichier attendu
@@ -34,6 +34,10 @@ Par défaut, les modules sont regroupés selon la colonne nommée `groupe` (ou `
 ## Titre
 
 Le champ « Titre » de la barre du haut définit le titre affiché au-dessus du Gantt, repris dans l'image exportée et dans le PDF. Vide, le titre est « Gantt de semestre ». Il est mémorisé dans le navigateur pour chaque nom de fichier.
+
+## Périodes bloquées
+
+Le formulaire « Ajouter une période bloquée » (début, fin, libellé) marque des périodes qui concernent tous les modules : une bande colorée traverse tout le Gantt, avec son libellé dans une ligne « Périodes bloquées » sous l'en-tête des mois. Libellés disponibles : Vacances, Jour férié, Mineure, Période entreprise, Événement (liste `PER_LABELS` au début du script, couleurs `--pv0` à `--pv4` dans le CSS). Les périodes sont mémorisées dans le navigateur, apparaissent dans la légende, l'image et le PDF, mais ne sont pas écrites dans le .xlsx exporté.
 
 ## Remises de rapports
 

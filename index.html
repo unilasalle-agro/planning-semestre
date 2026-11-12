@@ -15,6 +15,7 @@
   --f-ui:"Schibsted Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;
   --f-num:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
   --dw:8px; --lw:270px; --rh:68px;
+  --pv0:#5c6b82; --pv1:#b9650d; --pv2:#2e7d4a; --pv3:#1f6fa8; --pv4:#8a3a8a;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --bg:#12161c; --panel:#1a2029; --fg:#e6eaf0; --muted:#97a2b3; --line:#2b3340; --grid:#232a35; --wk:#171d26;
@@ -67,6 +68,11 @@ button, select, input { font:inherit; color:inherit }
 .bar select:disabled { opacity:.5 }
 .bar input[type="text"] { background:var(--panel); border:1px solid var(--line); border-radius:5px; padding:5px 8px; color:var(--fg); width:min(320px,100%) }
 .chart-title { font-size:20px; line-height:1.2; margin:0; font-weight:700; text-wrap:balance; overflow-wrap:anywhere }
+.pband { position:absolute; top:44px; bottom:0; opacity:.22; z-index:3; pointer-events:none }
+.row.per { min-height:0; height:26px }
+.row.per .trk { background:none }
+.row.per .lab { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; flex-direction:row; align-items:center; justify-content:flex-end }
+.plab { position:absolute; top:4px; height:18px; border-radius:3px; color:#fff; font-family:var(--f-num); font-size:10.5px; line-height:18px; padding:0 5px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis }
 .row.grp.grp2 { background:var(--panel) }
 .row.grp.grp2 .lab { background:var(--panel); padding-left:24px; text-transform:none; letter-spacing:0; font-size:12.5px; color:var(--fg) }
 .row.grp.grp2 .lab span { left:24px }
@@ -168,7 +174,7 @@ td.m { color:var(--muted); font-size:12.5px }
 <div class="wrap">
   <header class="noprint">
     <h1>Gantt de semestre</h1>
-    <p class="sub noprint">Déposez le planning du semestre (Excel ou CSV). Le Gantt regroupe les modules selon les colonnes de votre choix (UE par défaut) et fait ressortir les examens et les remises de rapports. Le fichier reste dans votre navigateur et n’est envoyé nulle part.</p>
+    <p class="sub noprint">Déposez le planning du semestre (Excel ou CSV). Le Gantt regroupe les modules selon les colonnes de votre choix (le champ « groupe » par défaut) et fait ressortir les examens et les remises de rapports. Le fichier reste dans votre navigateur et n’est envoyé nulle part.</p>
   </header>
 
   <div class="drop noprint" id="drop" tabindex="0" role="button" aria-label="Choisir un fichier de planning">
@@ -214,6 +220,22 @@ td.m { color:var(--muted); font-size:12.5px }
         <p class="note">Les remises ajoutées ici sont mémorisées dans ce navigateur, sur cet ordinateur. Pour les conserver ou les partager, téléchargez le planning mis à jour : elles y figurent sur des lignes de type REMISE, que l’application relit au prochain dépôt.</p>
       </section>
 
+      <section class="panel noprint">
+        <h2>Ajouter une période bloquée</h2>
+        <form class="add" id="perForm">
+          <label class="f-date">Début<input id="pStart" type="date" required></label>
+          <label class="f-date">Fin<input id="pEnd" type="date" required></label>
+          <label class="f-lab">Libellé<select id="pLab"></select></label>
+          <button class="btn" type="submit">Ajouter</button>
+        </form>
+        <p class="note">La période s’applique à tous les modules et s’affiche en bande verticale sur tout le Gantt. Les dates de début et de fin sont incluses. Elle est mémorisée dans ce navigateur, sur cet ordinateur seulement ; elle n’est pas ajoutée au fichier .xlsx exporté.</p>
+      </section>
+
+      <section>
+        <h2>Périodes bloquées</h2>
+        <div class="tbl"><table><thead><tr><th>Dates</th><th>Libellé</th><th>Durée</th><th class="noprint"></th></tr></thead><tbody id="perBody"></tbody></table></div>
+      </section>
+
       <section>
         <h2>Remises de rapports</h2>
         <div class="tbl"><table><thead><tr><th>Date</th><th>Module</th><th>Groupe</th><th>Libellé</th><th>Origine</th><th class="noprint"></th></tr></thead><tbody id="rmBody"></tbody></table></div>
@@ -247,6 +269,8 @@ var LS_REM = "gantt-semestre:remises";
 var LS_EXT = "gantt-semestre:types-examen";
 var LS_GB = "gantt-semestre:regroupement";
 var LS_TITLE = "gantt-semestre:titres";
+var LS_PER = "gantt-semestre:periodes";
+var PER_LABELS = ["Vacances", "Jour férié", "Mineure", "Période entreprise", "Événement"];
 
 var $ = function (s) { return document.querySelector(s); };
 function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
@@ -366,6 +390,8 @@ var S = { name: "", book: null, sheetIx: 0, recs: [], skipped: [], examTypes: nu
 function lsGet(k, def) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : def; } catch (e) { return def; } }
 function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
 S.own = lsGet(LS_REM, []);
+S.per = lsGet(LS_PER, []);
+if (!Array.isArray(S.per)) S.per = [];
 
 function isRemiseType(t) { return t === "REMISE" || t === "RAPPORT"; }
 function emptyLabel(f) { return "Sans " + (norm(f) === "ue" ? "UE" : String(f).toLowerCase()); }
@@ -438,6 +464,14 @@ function build() {
 
   var all = [];
   order.forEach(function (k) { mods[k].sess.forEach(function (s) { all.push(s.d); }); mods[k].rem.forEach(function (x) { all.push(x.d); }); });
+  var pers = [];
+  S.per.forEach(function (p) {
+    var a = parseDate(p.start), b = parseDate(p.end), k = PER_LABELS.indexOf(p.label);
+    if (a == null || b == null || b < a) return;
+    pers.push({ id: p.id, s: a, e: b, label: p.label, k: k < 0 ? 4 : k });
+    all.push(a); all.push(b);
+  });
+  pers.sort(function (x, y) { return x.s - y.s || x.e - y.e; });
   if (!all.length) return null;
   var dmin = Math.min.apply(null, all), dmax = Math.max.apply(null, all);
   var d0 = dmin - ((ymd(dmin).w + 6) % 7);
@@ -459,6 +493,13 @@ function build() {
   var gl = gb.length ? gb.join(" › ") + " · module" : "Module";
   var html = '<div class="row hdr"><div class="lab">' + esc(gl) + '</div><div class="trk" style="' + tw + '">' + head + "</div></div>";
   var exams = [], rems = [], seenOwn = {}, nbEx = 0;
+  var perTip = function (p) { return p.label + " · " + (p.s === p.e ? fdl(p.s) : "du " + fdl(p.s) + " au " + fdl(p.e)); };
+  if (pers.length) {
+    html += '<div class="row per"><div class="lab">Périodes bloquées</div><div class="trk" style="' + tw + '">' + pers.map(function (p) {
+      var n = p.e - p.s + 1;
+      return '<div class="plab" style="left:calc(' + dw + '*' + idx(p.s) + ');width:calc(' + dw + '*' + n + ' - 1px);background:var(--pv' + p.k + ')" title="' + esc(perTip(p)) + '">' + (n * 8 >= p.label.length * 6.6 + 12 ? esc(p.label) : "") + "</div>";
+    }).join("") + "</div></div>";
+  }
 
   function moduleRow(M) {
     var byDay = {};
@@ -529,8 +570,11 @@ function build() {
       flat.push({ label: a + " › " + b, entries: sortMods(g.subs[b]) });
     });
   });
+  pers.forEach(function (p) {
+    html += '<div class="pband" style="left:calc(var(--lw) + ' + dw + '*' + idx(p.s) + ');width:calc(' + dw + '*' + (p.e - p.s + 1) + ');background:var(--pv' + p.k + ')"></div>';
+  });
   html += '<div class="todayline" id="today" style="display:none"></div>';
-  return { html: html, N: N, d0: d0, exams: exams, rems: rems, mods: mods, order: order, byName: byName, names: Object.keys(byName), flat: flat, gb: gb, types: types, orphan: orphan, nbEx: nbEx };
+  return { pers: pers, perTip: perTip, html: html, N: N, d0: d0, exams: exams, rems: rems, mods: mods, order: order, byName: byName, names: Object.keys(byName), flat: flat, gb: gb, types: types, orphan: orphan, nbEx: nbEx };
 }
 
 function render() {
@@ -552,13 +596,21 @@ function render() {
   var leg = TYPES_COURS.concat(Object.keys(used).filter(function (t) { return TYPES_COURS.indexOf(t) < 0 && S.examTypes.indexOf(t) < 0; }))
     .filter(function (t) { return used[t]; })
     .map(function (t) { return '<span><i class="sw t-' + (TYPES_COURS.indexOf(t) >= 0 ? t : "AUTRE") + '"></i>' + esc(t) + "</span>"; }).join("");
-  $("#legend").innerHTML = leg + '<span><i class="sw ex"></i>Examen</span><span><i class="sw rm"></i>Remise de rapport</span><span><i class="sw td"></i>Aujourd’hui</span>';
+  var perLeg = PER_LABELS.filter(function (l, k) { return B.pers.some(function (p) { return p.k === k; }); })
+    .map(function (l) { var k = PER_LABELS.indexOf(l); return '<span><i class="sw" style="background:var(--pv' + k + ');opacity:.75"></i>' + esc(l) + "</span>"; }).join("");
+  $("#legend").innerHTML = leg + perLeg + '<span><i class="sw ex"></i>Examen</span><span><i class="sw rm"></i>Remise de rapport</span><span><i class="sw td"></i>Aujourd’hui</span>';
 
   var sel = $("#fMod"), keep = sel.value;
   sel.innerHTML = B.flat.map(function (g) {
     return '<optgroup label="' + esc(g.label) + '">' + g.entries.map(function (M) { return '<option value="' + esc(M.name) + '">' + esc(M.name) + "</option>"; }).join("") + "</optgroup>";
   }).join("");
   if (keep) sel.value = keep;
+
+  $("#perBody").innerHTML = B.pers.length ? B.pers.map(function (p) {
+    var n = p.e - p.s + 1;
+    return '<tr class="' + (p.e < todayN ? "past" : "") + '"><td class="n">' + (p.s === p.e ? fdl(p.s) : fdl(p.s) + " → " + fdl(p.e)) + "</td><td><span class=\"pill\" style=\"background:var(--pv" + p.k + ')">' + esc(p.label) +
+      '</span></td><td class="m">' + n + " jour" + (n > 1 ? "s" : "") + '</td><td class="noprint"><button class="link" data-delp="' + esc(p.id) + '" type="button">Supprimer</button></td></tr>';
+  }).join("") : '<tr><td colspan="4" class="m">Aucune période bloquée. Ajoutez-en avec le formulaire ci-dessus.</td></tr>';
 
   B.rems.sort(function (a, b) { return a.d - b.d; });
   $("#rmBody").innerHTML = B.rems.length ? B.rems.map(function (r) {
@@ -675,7 +727,7 @@ function exportImage(fmt) {
   var td = ch.querySelector("#today"); if (td) td.removeAttribute("id");
   ch.style.border = "1px solid #dfe3ea";
   /* html2canvas ne dessine pas les dégradés répétés : on remplace la grille par des bandes */
-  ch.querySelectorAll(".row:not(.hdr) .trk").forEach(function (trk) {
+  ch.querySelectorAll(".row:not(.hdr):not(.per) .trk").forEach(function (trk) {
     trk.style.background = "none";
     var frag = document.createDocumentFragment();
     for (var w = 0; w < B.N / 7; w++) {
@@ -719,6 +771,21 @@ function onGb() {
   S.groupBy = !a ? [] : (b && b !== a ? [a, b] : [a]);
   lsSet(LS_GB, S.groupBy); fillGb(); render();
 }
+$("#pLab").innerHTML = PER_LABELS.map(function (l) { return "<option>" + esc(l) + "</option>"; }).join("");
+$("#pStart").addEventListener("change", function () { var e = $("#pEnd"); e.min = this.value; if (!e.value || e.value < this.value) e.value = this.value; });
+$("#perForm").addEventListener("submit", function (e) {
+  e.preventDefault();
+  var a = $("#pStart").value, b = $("#pEnd").value, l = $("#pLab").value;
+  if (!a || !b) return;
+  if (b < a) { showMsg(["La date de fin précède la date de début."]); return; }
+  S.per.push({ id: "p" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), start: a, end: b, label: l });
+  lsSet(LS_PER, S.per); $("#pStart").value = ""; $("#pEnd").value = ""; render();
+});
+document.addEventListener("click", function (e) {
+  var id = e.target && e.target.getAttribute && e.target.getAttribute("data-delp");
+  if (!id) return;
+  S.per = S.per.filter(function (p) { return p.id !== id; }); lsSet(LS_PER, S.per); render();
+});
 $("#gtitle").addEventListener("input", function (e) {
   S.title = e.target.value; updateTitle();
   var all = lsGet(LS_TITLE, {}); if (!all || typeof all !== "object") all = {};
