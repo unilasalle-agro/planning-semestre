@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Gantt de semestre</title>
+<title>Planning de semestre</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Schibsted+Grotesk:wght@400;500;700&display=swap">
 <style>
 /* Layout : une page, une zone de dépôt, puis un Gantt (une ligne par module, regroupée par UE) et deux tableaux (examens, remises). */
@@ -173,7 +173,7 @@ td.m { color:var(--muted); font-size:12.5px }
 <body>
 <div class="wrap">
   <header class="noprint">
-    <h1>Gantt de semestre</h1>
+    <h1>Planning de semestre</h1>
     <p class="sub noprint">Déposez le planning du semestre (Excel ou CSV). Le Gantt regroupe les modules selon les colonnes de votre choix (le champ « groupe » par défaut) et fait ressortir les examens et les remises de rapports. Le fichier reste dans votre navigateur et n’est envoyé nulle part.</p>
   </header>
 
@@ -192,7 +192,7 @@ td.m { color:var(--muted); font-size:12.5px }
         <label class="noprint">Regrouper par&nbsp;<select id="gb1"></select></label>
         <label class="noprint">puis par&nbsp;<select id="gb2"></select></label>
         <label class="noprint"><input type="checkbox" id="showToday" checked>Ligne « aujourd’hui »</label>
-        <label class="noprint">Titre&nbsp;<input id="gtitle" type="text" maxlength="90" placeholder="Gantt de semestre" autocomplete="off"></label>
+        <label class="noprint">Titre&nbsp;<input id="gtitle" type="text" maxlength="90" placeholder="Planning de semestre" autocomplete="off"></label>
         <span class="grow"></span>
         <details class="menu noprint" id="menu">
           <summary class="btn ghost">Exporter ▾</summary>
@@ -211,17 +211,6 @@ td.m { color:var(--muted); font-size:12.5px }
       <p class="note noprint">Chaque colonne est un jour, chaque trait un jour de cours. Survolez un jour pour voir les horaires. « Créneaux » compte les lignes du fichier, groupes parallèles inclus. Les chiffres sous l’axe des mois sont les lundis.</p>
 
       <section class="panel noprint">
-        <h2>Ajouter une remise de rapport</h2>
-        <form class="add" id="addForm">
-          <label class="f-mod">Module<select id="fMod" required></select></label>
-          <label class="f-date">Date<input id="fDate" type="date" required></label>
-          <label class="f-lab">Libellé affiché<input id="fLab" type="text" maxlength="40" placeholder="Rapport final" required></label>
-          <button class="btn" type="submit">Ajouter</button>
-        </form>
-        <p class="note">Les remises ajoutées ici sont mémorisées dans ce navigateur, sur cet ordinateur. Pour les conserver ou les partager, téléchargez le planning mis à jour : elles y figurent sur des lignes de type REMISE, que l’application relit au prochain dépôt.</p>
-      </section>
-
-      <section class="panel noprint">
         <h2>Ajouter une période bloquée</h2>
         <form class="add" id="perForm">
           <label class="f-date">Début<input id="pStart" type="date" required></label>
@@ -235,6 +224,17 @@ td.m { color:var(--muted); font-size:12.5px }
       <section>
         <h2>Périodes bloquées</h2>
         <div class="tbl"><table><thead><tr><th>Dates</th><th>Libellé</th><th>Durée</th><th class="noprint"></th></tr></thead><tbody id="perBody"></tbody></table></div>
+      </section>
+
+      <section class="panel noprint">
+        <h2>Ajouter une remise de rapport</h2>
+        <form class="add" id="addForm">
+          <label class="f-mod">Module<select id="fMod" required></select></label>
+          <label class="f-date">Date<input id="fDate" type="date" required></label>
+          <label class="f-lab">Libellé affiché<input id="fLab" type="text" maxlength="40" placeholder="Rapport final" required></label>
+          <button class="btn" type="submit">Ajouter</button>
+        </form>
+        <p class="note">Les remises ajoutées ici sont mémorisées dans ce navigateur, sur cet ordinateur. Pour les conserver ou les partager, téléchargez le planning mis à jour : elles y figurent sur des lignes de type REMISE, que l’application relit au prochain dépôt.</p>
       </section>
 
       <section>
@@ -413,7 +413,7 @@ function defaultGroupBy() {
   var g = S.fields.filter(isGroupeField)[0];
   return g ? [g] : [];
 }
-function titleText() { return S.title.trim() || "Gantt de semestre"; }
+function titleText() { return S.title.trim() || "Planning de semestre"; }
 function updateTitle() { $("#chartTitle").textContent = titleText(); }
 function loadTitle() {
   var all = lsGet(LS_TITLE, {}); S.title = (all && all[S.name]) || "";

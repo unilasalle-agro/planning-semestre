@@ -1,4 +1,4 @@
-# Gantt de semestre
+# Planning de semestre
 
 Page web statique : on dépose le planning d'un semestre (.xlsx ou .csv), elle affiche un Gantt par module, regroupé selon le champ « groupe » (ou une autre colonne au choix), avec les examens en rouge et les remises de rapports en losanges.
 Tout se passe dans le navigateur : le fichier n'est envoyé nulle part.
@@ -33,7 +33,7 @@ Par défaut, les modules sont regroupés selon la colonne nommée `groupe` (ou `
 
 ## Titre
 
-Le champ « Titre » de la barre du haut définit le titre affiché au-dessus du Gantt, repris dans l'image exportée et dans le PDF. Vide, le titre est « Gantt de semestre ». Il est mémorisé dans le navigateur pour chaque nom de fichier.
+Le champ « Titre » de la barre du haut définit le titre affiché au-dessus du Gantt, repris dans l'image exportée et dans le PDF. Vide, le titre est « Planning de semestre ». Il est mémorisé dans le navigateur pour chaque nom de fichier.
 
 ## Ligne « aujourd'hui »
 
