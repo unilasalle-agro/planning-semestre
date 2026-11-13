@@ -105,8 +105,6 @@ button, select, input { font:inherit; color:inherit }
 .rml { position:absolute; bottom:3px; z-index:3; background:var(--remise); color:var(--remisefg); font-family:var(--f-num); font-size:10.5px; font-weight:500; padding:0 5px; line-height:15px; border-radius:3px; white-space:nowrap; transform:translateX(-50%); margin-left:calc(var(--dw)/2) }
 .rml.r { transform:translateX(-100%) translateX(calc(var(--dw)/2 + 1px)); margin-left:0 }
 .rml.l { transform:none; margin-left:calc(var(--dw)/-2 - 1px) }
-.past { opacity:.45 }
-tr.past td { opacity:.5 }
 .todayline { position:absolute; top:0; bottom:0; width:2px; background:var(--today); z-index:4; pointer-events:none }
 .todayline::after { content:"aujourd’hui"; position:absolute; top:46px; left:4px; font-size:10px; font-family:var(--f-num); color:var(--today); background:var(--panel); padding:0 3px; border-radius:2px }
 .panel { background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px 16px }
@@ -193,6 +191,7 @@ td.m { color:var(--muted); font-size:12.5px }
         <label id="sheetPick" class="noprint" hidden>Feuille&nbsp;<select id="sheet"></select></label>
         <label class="noprint">Regrouper par&nbsp;<select id="gb1"></select></label>
         <label class="noprint">puis par&nbsp;<select id="gb2"></select></label>
+        <label class="noprint"><input type="checkbox" id="showToday" checked>Ligne « aujourd’hui »</label>
         <label class="noprint">Titre&nbsp;<input id="gtitle" type="text" maxlength="90" placeholder="Gantt de semestre" autocomplete="off"></label>
         <span class="grow"></span>
         <details class="menu noprint" id="menu">
@@ -272,6 +271,7 @@ var LS_EXT = "gantt-semestre:types-examen";
 var LS_GB = "gantt-semestre:regroupement";
 var LS_TITLE = "gantt-semestre:titres";
 var LS_PER = "gantt-semestre:periodes";
+var LS_TODAY = "gantt-semestre:ligne-aujourdhui";
 var PER_LABELS = ["Vacances", "Jour férié", "Mineure", "Période entreprise", "Événement"];
 
 var $ = function (s) { return document.querySelector(s); };
@@ -393,6 +393,7 @@ function lsGet(k, def) { try { var v = localStorage.getItem(k); return v ? JSON.
 function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
 S.own = lsGet(LS_REM, []);
 S.per = lsGet(LS_PER, []);
+S.showToday = lsGet(LS_TODAY, true) !== false;
 if (!Array.isArray(S.per)) S.per = [];
 
 function isRemiseType(t) { return t === "REMISE" || t === "RAPPORT"; }
@@ -591,8 +592,7 @@ function render() {
 
   var todayN = dayOf(new Date().getFullYear(), new Date().getMonth() + 1, new Date().getDate());
   var i = todayN - B.d0, t = $("#today");
-  if (i >= 0 && i < B.N) { t.style.left = "calc(var(--lw) + var(--dw)*" + i + " + var(--dw)/2 - 1px)"; t.style.display = "block"; }
-  document.querySelectorAll("#chart [data-d]").forEach(function (e) { if (+e.getAttribute("data-d") < todayN) e.classList.add("past"); });
+  if (S.showToday && i >= 0 && i < B.N) { t.style.left = "calc(var(--lw) + var(--dw)*" + i + " + var(--dw)/2 - 1px)"; t.style.display = "block"; }
 
   var used = {}; B.order.forEach(function (k) { B.mods[k].sess.forEach(function (s) { used[s.typ] = 1; }); });
   var leg = TYPES_COURS.concat(Object.keys(used).filter(function (t) { return TYPES_COURS.indexOf(t) < 0 && S.examTypes.indexOf(t) < 0; }))
@@ -600,7 +600,7 @@ function render() {
     .map(function (t) { return '<span><i class="sw t-' + (TYPES_COURS.indexOf(t) >= 0 ? t : "AUTRE") + '"></i>' + esc(t) + "</span>"; }).join("");
   var perLeg = PER_LABELS.filter(function (l, k) { return B.pers.some(function (p) { return p.k === k; }); })
     .map(function (l) { var k = PER_LABELS.indexOf(l); return '<span><i class="sw" style="background:var(--pv' + k + ');opacity:.75"></i>' + esc(l) + "</span>"; }).join("");
-  $("#legend").innerHTML = leg + perLeg + '<span><i class="sw ex"></i>Examen</span><span><i class="sw rm"></i>Remise de rapport</span><span><i class="sw td"></i>Aujourd’hui</span>';
+  $("#legend").innerHTML = leg + perLeg + '<span><i class="sw ex"></i>Examen</span><span><i class="sw rm"></i>Remise de rapport</span>' + (S.showToday ? '<span><i class="sw td"></i>Aujourd’hui</span>' : "");
 
   var sel = $("#fMod"), keep = sel.value;
   sel.innerHTML = B.flat.map(function (g) {
@@ -788,6 +788,8 @@ document.addEventListener("click", function (e) {
   if (!id) return;
   S.per = S.per.filter(function (p) { return p.id !== id; }); lsSet(LS_PER, S.per); render();
 });
+$("#showToday").checked = S.showToday;
+$("#showToday").addEventListener("change", function (e) { S.showToday = e.target.checked; lsSet(LS_TODAY, S.showToday); render(); });
 $("#gtitle").addEventListener("input", function (e) {
   S.title = e.target.value; updateTitle();
   var all = lsGet(LS_TITLE, {}); if (!all || typeof all !== "object") all = {};

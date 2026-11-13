@@ -35,6 +35,10 @@ Par défaut, les modules sont regroupés selon la colonne nommée `groupe` (ou `
 
 Le champ « Titre » de la barre du haut définit le titre affiché au-dessus du Gantt, repris dans l'image exportée et dans le PDF. Vide, le titre est « Gantt de semestre ». Il est mémorisé dans le navigateur pour chaque nom de fichier.
 
+## Ligne « aujourd'hui »
+
+La case « Ligne « aujourd'hui » » de la barre du haut affiche ou masque la barre verticale de la date du jour (et son entrée dans la légende). Le choix est mémorisé dans le navigateur et pris en compte dans l'image exportée. Les séances, examens et remises passés ne sont pas atténués.
+
 ## Périodes bloquées
 
 Le formulaire « Ajouter une période bloquée » (début, fin, libellé) marque des périodes qui concernent tous les modules : une bande colorée traverse tout le Gantt, avec son libellé dans une ligne « Périodes bloquées » sous l'en-tête des mois. Libellés disponibles : Vacances, Jour férié, Mineure, Période entreprise, Événement (liste `PER_LABELS` au début du script, couleurs `--pv0` à `--pv4` dans le CSS). Les périodes sont mémorisées dans le navigateur, apparaissent dans la légende, l'image et le PDF, mais ne sont pas écrites dans le .xlsx exporté.
