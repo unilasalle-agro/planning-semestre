@@ -33,6 +33,8 @@ body { margin:0; background:var(--bg); color:var(--fg); font-family:var(--f-ui);
 .wrap { max-width:1500px; margin:0 auto; display:flex; flex-direction:column; gap:20px }
 h1 { font-size:26px; line-height:1.15; margin:0; font-weight:700; letter-spacing:-.01em; text-wrap:balance }
 h2 { font-size:17px; margin:0 0 8px; font-weight:700 }
+.panel h3 { font-size:14px; font-weight:700; margin:14px 0 8px; color:var(--fg) }
+.panel h2 + h3 { margin-top:6px }
 .sub { margin:6px 0 0; color:var(--muted); max-width:75ch }
 button, select, input { font:inherit; color:inherit }
 .btn { background:var(--accent); color:var(--accentfg); border:0; border-radius:5px; padding:7px 14px; font-weight:500; cursor:pointer }
@@ -213,7 +215,8 @@ td.m { color:var(--muted); font-size:12.5px }
       <p class="note noprint">Chaque colonne est un jour, chaque trait un jour de cours. Survolez un jour pour voir les horaires. « Créneaux » compte les lignes du fichier, groupes parallèles inclus. Les chiffres sous l’axe des mois sont les lundis.</p>
 
       <section class="panel noprint">
-        <h2>Ajouter une période bloquée</h2>
+        <h2>Périodes bloquées</h2>
+        <h3>Ajouter une période bloquée</h3>
         <form class="add" id="perForm">
           <label class="f-date">Début<input id="pStart" type="date" required></label>
           <label class="f-date">Fin<input id="pEnd" type="date" required></label>
@@ -221,15 +224,13 @@ td.m { color:var(--muted); font-size:12.5px }
           <button class="btn" type="submit">Ajouter</button>
         </form>
         <p class="note">La période s’applique à tous les modules et s’affiche en bande verticale sur tout le Gantt. Les dates de début et de fin sont incluses. Elle est mémorisée dans ce navigateur, sur cet ordinateur seulement ; elle n’est pas ajoutée au fichier .xlsx exporté.</p>
-      </section>
-
-      <section>
-        <h2>Périodes bloquées</h2>
+        <h3>Gérer les périodes bloquées</h3>
         <div class="tbl"><table><thead><tr><th>Dates</th><th>Libellé</th><th>Durée</th><th class="noprint"></th></tr></thead><tbody id="perBody"></tbody></table></div>
       </section>
 
       <section class="panel noprint">
-        <h2>Ajouter une remise de rapport</h2>
+        <h2>Remises de rapports</h2>
+        <h3>Ajouter une remise de rapport</h3>
         <form class="add" id="addForm">
           <label class="f-mod">Module<select id="fMod" required></select></label>
           <label class="f-date">Date<input id="fDate" type="date" required></label>
@@ -238,16 +239,13 @@ td.m { color:var(--muted); font-size:12.5px }
           <button class="btn" type="submit">Ajouter</button>
         </form>
         <p class="note">Les remises ajoutées ici sont mémorisées dans ce navigateur, sur cet ordinateur. Pour les conserver ou les partager, téléchargez le planning mis à jour : elles y figurent sur des lignes de type REMISE, que l’application relit au prochain dépôt.</p>
-      </section>
-
-      <section>
-        <h2>Remises de rapports</h2>
+        <h3>Gérer les remises de rapports</h3>
         <div class="tbl"><table><thead><tr><th>Date</th><th>Module</th><th>Groupe</th><th>Libellé</th><th>Modalité</th><th>Origine</th><th class="noprint"></th></tr></thead><tbody id="rmBody"></tbody></table></div>
       </section>
 
       <section>
         <h2>Examens, par date</h2>
-        <div class="tbl"><table><thead><tr><th>Date</th><th>Horaire</th><th>Module</th><th>Groupe</th><th>Format</th><th>Modalité</th><th>Durée (min)</th></tr></thead><tbody id="exBody"></tbody></table></div>
+        <div class="tbl"><table><thead><tr><th>Date</th><th>Horaire</th><th>Durée (min)</th><th>Module</th><th>Groupe</th><th>Format</th><th>Modalité</th></tr></thead><tbody id="exBody"></tbody></table></div>
         <p class="note" id="noExam"></p>
       </section>
 
@@ -654,8 +652,8 @@ function render() {
 
   B.exams.sort(function (a, b) { return a.d - b.d || (a.deb < b.deb ? -1 : 1); });
   $("#exBody").innerHTML = B.exams.length ? B.exams.map(function (e) {
-    return '<tr class="' + (e.d < todayN ? "past" : "") + '"><td class="n">' + fdl(e.d) + '</td><td class="n">' + (e.deb ? e.deb + "–" + e.fin : "") + "</td><td><b>" + esc(e.mod) +
-      '</b></td><td class="m">' + esc(e.ue) + '</td><td><span class="pill">' + (e.typ === "EXAMEN_ECRIT" ? "Écrit" : e.typ === "EXAMEN_ORAL" ? "Oral" : esc(e.typ)) + '</span></td><td class="m">' + (e.modal ? picOf(e.modal) : "") + (MODAL_LABEL[e.modal] || "—") + '</td><td class="n">' + (e.dur != null ? e.dur : "—") + "</td></tr>";
+    return '<tr class="' + (e.d < todayN ? "past" : "") + '"><td class="n">' + fdl(e.d) + '</td><td class="n">' + (e.deb ? e.deb + "–" + e.fin : "") + '</td><td class="n">' + (e.dur != null ? e.dur : "—") + "</td><td><b>" + esc(e.mod) +
+      '</b></td><td class="m">' + esc(e.ue) + '</td><td><span class="pill">' + (e.typ === "EXAMEN_ECRIT" ? "Écrit" : e.typ === "EXAMEN_ORAL" ? "Oral" : esc(e.typ)) + '</span></td><td class="m">' + (e.modal ? picOf(e.modal) : "") + (MODAL_LABEL[e.modal] || "—") + "</td></tr>";
   }).join("") : '<tr><td colspan="7" class="m">Aucun examen avec les types cochés ci-dessous.</td></tr>';
   var noEx = B.names.filter(function (n) { return !B.exams.some(function (e) { return e.mod === n; }); });
   $("#noExam").textContent = noEx.length ? "Aucun examen dans le fichier pour : " + noEx.join(", ") + "." : "";

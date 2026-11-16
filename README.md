@@ -54,11 +54,11 @@ La case « Ligne « aujourd'hui » » de la barre du haut affiche ou masque la b
 
 ## Périodes bloquées
 
-Le formulaire « Ajouter une période bloquée » (début, fin, libellé) marque des périodes qui concernent tous les modules : une bande colorée traverse tout le Gantt, avec son libellé dans une ligne « Périodes bloquées » sous l'en-tête des mois. Libellés disponibles : Vacances, Jour férié, Mineure, Période entreprise, Événement (liste `PER_LABELS` au début du script, couleurs `--pv0` à `--pv4` dans le CSS). Les périodes sont mémorisées dans le navigateur, apparaissent dans la légende, l'image et le PDF, mais ne sont pas écrites dans le .xlsx exporté.
+Le bloc « Périodes bloquées » de la page regroupe deux parties : « Ajouter une période bloquée » (formulaire : début, fin, libellé) et « Gérer les périodes bloquées » (tableau avec suppression). Une période concerne tous les modules : elle marque des périodes qui concernent tous les modules : une bande colorée traverse tout le Gantt, avec son libellé dans une ligne « Périodes bloquées » sous l'en-tête des mois (le Gantt, pas le bloc de réglages). Libellés disponibles : Vacances, Jour férié, Mineure, Période entreprise, Événement (liste `PER_LABELS` au début du script, couleurs `--pv0` à `--pv4` dans le CSS). Les périodes sont mémorisées dans le navigateur, apparaissent dans la légende, l'image et le PDF, mais ne sont pas écrites dans le .xlsx exporté.
 
 ## Remises de rapports
 
-Le formulaire de la page ajoute une remise (module, date, libellé). Elle est mémorisée dans le navigateur (`localStorage`), sur cet ordinateur seulement.
+Le bloc « Remises de rapports » de la page regroupe « Ajouter une remise de rapport » (formulaire : module, date, libellé, modalité) et « Gérer les remises de rapports » (tableau, avec suppression des remises ajoutées ici). Une remise ajoutée est mémorisée dans le navigateur (`localStorage`), sur cet ordinateur seulement.
 Le bouton « Télécharger le planning avec les remises » produit un .xlsx qui contient ces remises sous forme de lignes `REMISE`. Le redéposer les remet à l'écran, sur n'importe quel ordinateur.
 
 ## Mettre en ligne avec GitHub Pages
@@ -73,7 +73,7 @@ Pour tester en local, ouvrir `index.html` suffit : tout fonctionne hors ligne, s
 
 Le menu « Exporter » propose :
 - **Image PNG** ou **JPEG** : le Gantt seul, avec titre, légende et date d'édition, sur fond blanc quel que soit le thème de la page.
-- **PDF** : ouvre l'impression du navigateur. Une mise en page A4 paysage est prévue (Gantt réduit à la largeur de la page, sans formulaire ni boutons). Choisir « Enregistrer au format PDF » comme imprimante.
+- **PDF** : ouvre l'impression du navigateur. Une mise en page A4 paysage est prévue (Gantt réduit à la largeur de la page ; les blocs « Périodes bloquées », « Remises de rapports » et « Types d’activité », ainsi que l'en-tête, les formulaires et les boutons, ne sont pas imprimés). Choisir « Enregistrer au format PDF » comme imprimante.
 - **Planning avec les remises (.xlsx)**.
 
 ## Contenu
