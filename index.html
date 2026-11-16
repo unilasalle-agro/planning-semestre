@@ -98,8 +98,6 @@ button, select, input { font:inherit; color:inherit }
 .day { position:absolute; top:calc(50% - 3px); width:calc(var(--dw) - 1px); height:18px; display:flex; flex-direction:column; gap:1px; border-radius:1.5px; overflow:hidden }
 .day i { flex:1; display:block }
 .t-CM{background:var(--CM)} .t-TD{background:var(--TD)} .t-TP{background:var(--TP)} .t-AF{background:var(--AF)} .t-EXT{background:var(--EXT)} .t-AUTRE{background:var(--AUTRE)}
-/* individuel : mêmes couleurs que le collectif, rayées de blanc en diagonale */
-.exm.ind, .rmk.ind, .sw.ind { background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='6' height='6'><path d='M-1 1 L1 -1 M0 6 L6 0 M5 7 L7 5' stroke='white' stroke-width='1.8'/></svg>"); background-size:6px 6px }
 .pic { vertical-align:-1px; margin-right:3px }
 .exm { position:absolute; top:calc(50% - 7px); height:26px; width:calc(var(--dw) + 2px); background:var(--exam); border-radius:2px; z-index:2; box-shadow:0 0 0 1.5px var(--panel) }
 .exl { position:absolute; top:4px; z-index:3; background:var(--exam); color:var(--examfg); font-family:var(--f-num); font-size:10.5px; font-weight:500; padding:0 5px; line-height:15px; border-radius:3px; white-space:nowrap; transform:translateX(-50%) }
@@ -556,21 +554,21 @@ function build() {
     exd.forEach(function (x) { var l = cl[cl.length - 1]; if (l && x.d - l[l.length - 1].d <= 3) l.push(x); else cl.push([x]); });
     var marks = "";
     cl.forEach(function (c) {
-      c.forEach(function (x) { marks += '<div class="exm' + (x.ind ? ' ind' : '') + '" data-d="' + x.d + '" style="left:calc(' + dw + '*' + idx(x.d) + ' - 1px)" title="' + esc(x.tip) + '"></div>'; });
+      c.forEach(function (x) { marks += '<div class="exm" data-d="' + x.d + '" style="left:calc(' + dw + '*' + idx(x.d) + ' - 1px)" title="' + esc(x.tip) + '"></div>'; });
       var a = c[0].d, b = c[c.length - 1].d, f = {};
       c.forEach(function (x) { x.ex.forEach(function (s) { f[s.typ === "EXAMEN_ECRIT" ? "Écrit" : s.typ === "EXAMEN_ORAL" ? "Oral" : s.typ] = 1; }); });
       var mm = {}, mset = {}; c.forEach(function (x) { x.ex.forEach(function (s) { if (s.modal) { mm[MODAL_LABEL[s.modal].toLowerCase()] = 1; mset[s.modal] = 1; } }); });
-      var mtxt = Object.keys(mm).sort().join("/");
-      var txt = Object.keys(f).sort().join("/") + (mtxt ? " · " + mtxt : "") + " · " + (a === b ? fd(a) : ymd(a).d + "–" + ymd(b).d + " " + MOIS[ymd(b).m - 1]);
+      var typTxt = Object.keys(f).sort().join("/");
+      var txt = " · " + (a === b ? fd(a) : ymd(a).d + "–" + ymd(b).d + " " + MOIS[ymd(b).m - 1]);
       var mid = (idx(a) + idx(b)) / 2, pos = mid > N - 14 ? "r" : mid < 6 ? "l" : "c";
-      marks += '<div class="exl ' + pos + '" data-d="' + b + '" style="left:calc(' + dw + '*' + mid + ' + ' + dw + '/2)">' + picOf(mset.ind ? "ind" : "") + picOf(mset.col ? "col" : "") + esc(txt) + "</div>";
+      marks += '<div class="exl ' + pos + '" data-d="' + b + '" style="left:calc(' + dw + '*' + mid + ' + ' + dw + '/2)">' + esc(typTxt) + " " + picOf(mset.ind ? "ind" : "") + picOf(mset.col ? "col" : "") + esc(txt.trim()) + "</div>";
     });
     M.rem.forEach(function (x) {
       var pos = idx(x.d) > N - 14 ? "r" : idx(x.d) < 6 ? "l" : "c";
       if (x.modal) anyModal = true;
       var rmod = x.modal ? " · " + (x.modal === "ind" ? "individuelle" : "collective") : "";
-      marks += '<div class="rmk' + (x.modal === "ind" ? " ind" : "") + '" data-d="' + x.d + '" style="left:calc(' + dw + '*' + idx(x.d) + ')" title="' + esc(fdl(x.d) + " · " + x.lab + rmod) + '"></div>' +
-        '<div class="rml ' + pos + '" data-d="' + x.d + '" style="left:calc(' + dw + '*' + idx(x.d) + ')">' + picOf(x.modal) + esc(x.lab + rmod + " · " + fd(x.d)) + "</div>";
+      marks += '<div class="rmk" data-d="' + x.d + '" style="left:calc(' + dw + '*' + idx(x.d) + ')" title="' + esc(fdl(x.d) + " · " + x.lab + rmod) + '"></div>' +
+        '<div class="rml ' + pos + '" data-d="' + x.d + '" style="left:calc(' + dw + '*' + idx(x.d) + ')">' + esc(x.lab) + " " + picOf(x.modal) + esc("· " + fd(x.d)) + "</div>";
       if (x.own) { if (seenOwn[x.id]) return; seenOwn[x.id] = 1; }
       rems.push({ d: x.d, mod: M.name, ue: M.path.join(" › "), lab: x.lab, own: x.own, id: x.id, modal: x.modal });
     });
@@ -633,7 +631,7 @@ function render() {
     .map(function (t) { return '<span><i class="sw t-' + (TYPES_COURS.indexOf(t) >= 0 ? t : "AUTRE") + '"></i>' + esc(t) + "</span>"; }).join("");
   var perLeg = PER_LABELS.filter(function (l, k) { return B.pers.some(function (p) { return p.k === k; }); })
     .map(function (l) { var k = PER_LABELS.indexOf(l); return '<span><i class="sw" style="background:var(--pv' + k + ');opacity:.75"></i>' + esc(l) + "</span>"; }).join("");
-  $("#legend").innerHTML = leg + perLeg + (B.anyModal ? '<span><i class="sw ex"></i>Examen collectif</span><span><i class="sw ex ind"></i>Examen individuel</span><span><i class="sw rm"></i>Remise collective</span><span><i class="sw rm ind"></i>Remise individuelle</span>' : '<span><i class="sw ex"></i>Examen</span><span><i class="sw rm"></i>Remise de rapport</span>') + (S.showToday ? '<span><i class="sw td"></i>Aujourd’hui</span>' : "");
+  $("#legend").innerHTML = leg + perLeg + '<span><i class="sw ex"></i>Examen</span><span><i class="sw rm"></i>Remise de rapport</span>' + (B.anyModal ? '<span>' + ICON_IND + 'Individuel</span><span>' + ICON_COL + 'Collectif</span>' : "") + (S.showToday ? '<span><i class="sw td"></i>Aujourd’hui</span>' : "");
 
   var sel = $("#fMod"), keep = sel.value;
   sel.innerHTML = B.flat.map(function (g) {

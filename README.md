@@ -39,9 +39,9 @@ Le champ « Titre » de la barre du haut définit le titre affiché au-dessus du
 ## Examens individuels ou collectifs
 
 Si le fichier contient une colonne dont le nom commence par « modalité » (par exemple `modalité examen`), sa valeur `Individuel` ou `Collectif` (majuscules, accents et féminin ignorés : `individuelle`, `collective`) est appliquée aux examens et aux lignes `REMISE`.
-- **Collectif** : marqueur plein, pictogramme de groupe dans l'étiquette. **Individuel** : marqueur hachuré en diagonale (rouge pour un examen, losange magenta pour une remise), pictogramme d'une personne dans l'étiquette. Les pictogrammes apparaissent aussi dans les tableaux.
+- Les marqueurs sont identiques (rouge plein pour un examen, losange magenta pour une remise). Seul le pictogramme placé devant l'étiquette distingue la modalité : groupe de personnes pour **Collectif**, une personne pour **Individuel** (aucun pictogramme si la modalité est vide). Le texte « individuelle / collective » reste dans l'infobulle et les tableaux.
 - Une valeur vide ou inconnue donne un marqueur plein et un « — » dans les tableaux : la page ne devine rien.
-- L'étiquette précise la modalité (« Oral · individuel · 18–19 janv. »), et la légende ajoute « Examen individuel » / « Remise individuelle » dès qu'une modalité existe.
+- La légende explique les deux pictogrammes dès qu'une modalité existe dans les données.
 - Le formulaire « Ajouter une remise de rapport » propose une liste Modalité (Non précisée, Individuelle, Collective). L'export .xlsx écrit cette valeur dans la colonne de modalité, qu'il crée (« Modalité examen ») si le fichier n'en avait pas.
 
 ## Durée des examens
