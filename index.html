@@ -52,6 +52,8 @@ button, select, input { font:inherit; color:inherit }
 .sw { width:10px; height:14px; border-radius:2px; display:inline-block }
 .sw.ex { background:var(--exam); width:12px }
 .sw.rm { background:var(--remise); width:11px; height:11px; transform:rotate(45deg); border-radius:1px }
+.sw.ex.ind { background:transparent; border:2px solid var(--exam) }
+.sw.rm.ind { background:transparent; border:2px solid var(--remise) }
 .sw.td { width:2px; height:16px; background:var(--today) }
 .chart-box { background:var(--panel); border:1px solid var(--line); border-radius:6px; overflow-x:auto }
 .chart { position:relative; width:max-content }
@@ -97,6 +99,8 @@ button, select, input { font:inherit; color:inherit }
 .day { position:absolute; top:calc(50% - 3px); width:calc(var(--dw) - 1px); height:18px; display:flex; flex-direction:column; gap:1px; border-radius:1.5px; overflow:hidden }
 .day i { flex:1; display:block }
 .t-CM{background:var(--CM)} .t-TD{background:var(--TD)} .t-TP{background:var(--TP)} .t-AF{background:var(--AF)} .t-EXT{background:var(--EXT)} .t-AUTRE{background:var(--AUTRE)}
+.exm.ind { background:var(--panel); border:2px solid var(--exam) }
+.rmk.ind { background:var(--panel); border:2px solid var(--remise) }
 .exm { position:absolute; top:calc(50% - 7px); height:26px; width:calc(var(--dw) + 2px); background:var(--exam); border-radius:2px; z-index:2; box-shadow:0 0 0 1.5px var(--panel) }
 .exl { position:absolute; top:4px; z-index:3; background:var(--exam); color:var(--examfg); font-family:var(--f-num); font-size:10.5px; font-weight:500; padding:0 5px; line-height:15px; border-radius:3px; white-space:nowrap; transform:translateX(-50%) }
 .exl.r { transform:translateX(-100%) translateX(calc(var(--dw)/2 + 1px)) }
@@ -111,7 +115,7 @@ button, select, input { font:inherit; color:inherit }
 form.add { display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end }
 form.add label { display:flex; flex-direction:column; gap:3px; font-size:12px; color:var(--muted); min-width:0 }
 form.add input, form.add select { background:var(--bg); border:1px solid var(--line); border-radius:5px; padding:6px 8px; color:var(--fg); max-width:100%; min-width:0 }
-form.add .f-mod { flex:1 1 280px } form.add .f-date { flex:0 0 150px } form.add .f-lab { flex:1 1 200px }
+form.add .f-mod { flex:1 1 280px } form.add .f-date { flex:0 0 150px } form.add .f-lab { flex:1 1 200px } form.add .f-modal { flex:0 0 150px }
 .types { display:flex; flex-wrap:wrap; gap:6px 14px; font-size:13px }
 .types label { display:inline-flex; gap:5px; align-items:center }
 .tbl { background:var(--panel); border:1px solid var(--line); border-radius:6px; overflow-x:auto }
@@ -232,6 +236,7 @@ td.m { color:var(--muted); font-size:12.5px }
           <label class="f-mod">Module<select id="fMod" required></select></label>
           <label class="f-date">Date<input id="fDate" type="date" required></label>
           <label class="f-lab">Libellé affiché<input id="fLab" type="text" maxlength="40" placeholder="Rapport final" required></label>
+          <label class="f-modal">Modalité<select id="fModal"><option value="">Non précisée</option><option value="ind">Individuelle</option><option value="col">Collective</option></select></label>
           <button class="btn" type="submit">Ajouter</button>
         </form>
         <p class="note">Les remises ajoutées ici sont mémorisées dans ce navigateur, sur cet ordinateur. Pour les conserver ou les partager, téléchargez le planning mis à jour : elles y figurent sur des lignes de type REMISE, que l’application relit au prochain dépôt.</p>
@@ -239,12 +244,12 @@ td.m { color:var(--muted); font-size:12.5px }
 
       <section>
         <h2>Remises de rapports</h2>
-        <div class="tbl"><table><thead><tr><th>Date</th><th>Module</th><th>Groupe</th><th>Libellé</th><th>Origine</th><th class="noprint"></th></tr></thead><tbody id="rmBody"></tbody></table></div>
+        <div class="tbl"><table><thead><tr><th>Date</th><th>Module</th><th>Groupe</th><th>Libellé</th><th>Modalité</th><th>Origine</th><th class="noprint"></th></tr></thead><tbody id="rmBody"></tbody></table></div>
       </section>
 
       <section>
         <h2>Examens, par date</h2>
-        <div class="tbl"><table><thead><tr><th>Date</th><th>Horaire</th><th>Module</th><th>Groupe</th><th>Format</th></tr></thead><tbody id="exBody"></tbody></table></div>
+        <div class="tbl"><table><thead><tr><th>Date</th><th>Horaire</th><th>Module</th><th>Groupe</th><th>Format</th><th>Modalité</th></tr></thead><tbody id="exBody"></tbody></table></div>
         <p class="note" id="noExam"></p>
       </section>
 
@@ -363,6 +368,8 @@ function readBook(buf, name) {
 function extract(sheet) {
   var t = sheet.tbl, m = t.map, recs = [], skipped = [];
   var headers = (sheet.aoa[t.start - 1] || []).map(function (h) { return String(h == null ? "" : h).trim(); });
+  var mIdx = -1;
+  headers.forEach(function (h, i) { if (mIdx < 0 && /^modalite/.test(norm(h))) mIdx = i; });
   var fields = [], fidx = [];
   headers.forEach(function (h, i) {
     if (!h || i === m.date || i === m.debut || i === m.fin || i === m.duree || i === m.module) return;
@@ -380,14 +387,15 @@ function extract(sheet) {
     fields.forEach(function (h, k) { var v = r[fidx[k]]; f[h] = v == null ? "" : String(v).trim(); });
     recs.push({
       d: d, deb: m.debut != null ? parseTime(r[m.debut]) : "", fin: m.fin != null ? parseTime(r[m.fin]) : "",
-      typ: typ, mod: mod, lib: m.lib != null ? String(r[m.lib]).trim() : "", f: f, raw: r.slice(0, headers.length)
+      typ: typ, mod: mod, lib: m.lib != null ? String(r[m.lib]).trim() : "", f: f, raw: r.slice(0, headers.length),
+      modal: mIdx >= 0 ? parseModal(r[mIdx]) : ""
     });
   }
-  return { recs: recs, skipped: skipped, headers: headers, fields: fields, map: m };
+  return { recs: recs, skipped: skipped, headers: headers, fields: fields, map: m, modalIdx: mIdx };
 }
 
 /* ---------- état ---------- */
-var S = { name: "", book: null, sheetIx: 0, recs: [], skipped: [], examTypes: null, own: [], title: "", headers: [], fields: [], map: {}, groupBy: [] };
+var S = { name: "", book: null, sheetIx: 0, recs: [], skipped: [], examTypes: null, own: [], title: "", headers: [], fields: [], map: {}, modalIdx: -1, groupBy: [] };
 
 function lsGet(k, def) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : def; } catch (e) { return def; } }
 function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
@@ -397,6 +405,13 @@ S.showToday = lsGet(LS_TODAY, true) !== false;
 if (!Array.isArray(S.per)) S.per = [];
 
 function isRemiseType(t) { return t === "REMISE" || t === "RAPPORT"; }
+function parseModal(v) {
+  var n = norm(v);
+  if (/^indiv/.test(n)) return "ind";
+  if (/^collect/.test(n)) return "col";
+  return "";
+}
+var MODAL_LABEL = { ind: "Individuel", col: "Collectif" };
 function emptyLabel(f) { return "Sans " + (norm(f) === "ue" ? "UE" : String(f).toLowerCase()); }
 function isGroupeField(f) { return /^groupes?$/.test(norm(f)); }
 function ueRank(u) { if (/^Sans /.test(u)) return [2, 0]; var m = u.match(/^UE\s*(\d+)/i); return m ? [0, +m[1]] : [1, 0]; }
@@ -455,13 +470,13 @@ function build() {
     var p = pathOf(r), key = p.join("\u0001") + "\u0002" + r.mod;
     if (!mods[key]) { mods[key] = { key: key, name: r.mod, path: p, sess: [], rem: [] }; order.push(key); (byName[r.mod] = byName[r.mod] || []).push(mods[key]); }
     var M = mods[key];
-    if (isRemiseType(r.typ)) M.rem.push({ d: r.d, lab: r.lib || "Remise", own: false });
+    if (isRemiseType(r.typ)) M.rem.push({ d: r.d, lab: r.lib || "Remise", own: false, modal: r.modal });
     else M.sess.push(r);
   });
   var orphan = 0;
   S.own.forEach(function (o) {
     var d = parseDate(o.date), list = byName[o.module];
-    if (list && d != null) list.forEach(function (M) { M.rem.push({ d: d, lab: o.label, own: true, id: o.id }); });
+    if (list && d != null) list.forEach(function (M) { M.rem.push({ d: d, lab: o.label, own: true, id: o.id, modal: o.modal || "" }); });
     else orphan++;
   });
 
@@ -495,7 +510,7 @@ function build() {
   var tw = 'width:calc(' + dw + '*' + N + ')';
   var gl = gb.length ? gb.join(" › ") + " · module" : "Module";
   var html = '<div class="row hdr"><div class="lab">' + esc(gl) + '</div><div class="trk" style="' + tw + '">' + head + "</div></div>";
-  var exams = [], rems = [], seenOwn = {}, nbEx = 0;
+  var exams = [], rems = [], seenOwn = {}, nbEx = 0, anyModal = S.modalIdx >= 0;
   var perTip = function (p) { return p.label + " · " + (p.s === p.e ? fdl(p.s) : "du " + fdl(p.s) + " au " + fdl(p.e)); };
   if (pers.length) {
     html += '<div class="row per"><div class="lab">Périodes bloquées</div><div class="trk" style="' + tw + '">' + pers.map(function (p) {
@@ -511,7 +526,7 @@ function build() {
     var ticks = "", exd = [];
     days.forEach(function (d) {
       var lst = byDay[d].slice().sort(function (x, y) { return x.deb < y.deb ? -1 : 1; });
-      var tip = lst.map(function (s) { return s.typ + (s.deb ? " " + s.deb + "–" + s.fin : ""); }).join("; ");
+      var tip = lst.map(function (s) { return s.typ + (s.deb ? " " + s.deb + "–" + s.fin : "") + (s.modal ? " · " + MODAL_LABEL[s.modal].toLowerCase() : ""); }).join("; ");
       tip = fdl(d) + " · " + tip;
       var ty = []; lst.forEach(function (s) { if (!isEx(s.typ) && ty.indexOf(s.typ) < 0) ty.push(s.typ); });
       ty.sort(function (x, y) { var ix = TYPES_COURS.indexOf(x), iy = TYPES_COURS.indexOf(y); return (ix < 0 ? 9 : ix) - (iy < 0 ? 9 : iy); });
@@ -519,27 +534,31 @@ function build() {
         ty.map(function (t) { return '<i class="t-' + (TYPES_COURS.indexOf(t) >= 0 ? t : "AUTRE") + '"></i>'; }).join("") + "</div>";
       var ex = lst.filter(function (s) { return isEx(s.typ); });
       if (ex.length) {
-        exd.push({ d: d, ex: ex, tip: tip });
-        ex.forEach(function (s) { exams.push({ d: d, deb: s.deb, fin: s.fin, typ: s.typ, mod: M.name, ue: M.path.join(" › ") }); nbEx++; });
+        exd.push({ d: d, ex: ex, tip: tip, ind: ex.every(function (s) { return s.modal === "ind"; }) });
+        ex.forEach(function (s) { exams.push({ d: d, deb: s.deb, fin: s.fin, typ: s.typ, modal: s.modal, mod: M.name, ue: M.path.join(" › ") }); nbEx++; if (s.modal) anyModal = true; });
       }
     });
     var cl = [];
     exd.forEach(function (x) { var l = cl[cl.length - 1]; if (l && x.d - l[l.length - 1].d <= 3) l.push(x); else cl.push([x]); });
     var marks = "";
     cl.forEach(function (c) {
-      c.forEach(function (x) { marks += '<div class="exm' + '" data-d="' + x.d + '" style="left:calc(' + dw + '*' + idx(x.d) + ' - 1px)" title="' + esc(x.tip) + '"></div>'; });
+      c.forEach(function (x) { marks += '<div class="exm' + (x.ind ? ' ind' : '') + '" data-d="' + x.d + '" style="left:calc(' + dw + '*' + idx(x.d) + ' - 1px)" title="' + esc(x.tip) + '"></div>'; });
       var a = c[0].d, b = c[c.length - 1].d, f = {};
       c.forEach(function (x) { x.ex.forEach(function (s) { f[s.typ === "EXAMEN_ECRIT" ? "Écrit" : s.typ === "EXAMEN_ORAL" ? "Oral" : s.typ] = 1; }); });
-      var txt = Object.keys(f).sort().join("/") + " · " + (a === b ? fd(a) : ymd(a).d + "–" + ymd(b).d + " " + MOIS[ymd(b).m - 1]);
+      var mm = {}; c.forEach(function (x) { x.ex.forEach(function (s) { if (s.modal) mm[MODAL_LABEL[s.modal].toLowerCase()] = 1; }); });
+      var mtxt = Object.keys(mm).sort().join("/");
+      var txt = Object.keys(f).sort().join("/") + (mtxt ? " · " + mtxt : "") + " · " + (a === b ? fd(a) : ymd(a).d + "–" + ymd(b).d + " " + MOIS[ymd(b).m - 1]);
       var mid = (idx(a) + idx(b)) / 2, pos = mid > N - 14 ? "r" : mid < 6 ? "l" : "c";
       marks += '<div class="exl ' + pos + '" data-d="' + b + '" style="left:calc(' + dw + '*' + mid + ' + ' + dw + '/2)">' + esc(txt) + "</div>";
     });
     M.rem.forEach(function (x) {
       var pos = idx(x.d) > N - 14 ? "r" : idx(x.d) < 6 ? "l" : "c";
-      marks += '<div class="rmk" data-d="' + x.d + '" style="left:calc(' + dw + '*' + idx(x.d) + ')" title="' + esc(fdl(x.d) + " · " + x.lab) + '"></div>' +
-        '<div class="rml ' + pos + '" data-d="' + x.d + '" style="left:calc(' + dw + '*' + idx(x.d) + ')">' + esc(x.lab + " · " + fd(x.d)) + "</div>";
+      if (x.modal) anyModal = true;
+      var rmod = x.modal ? " · " + (x.modal === "ind" ? "individuelle" : "collective") : "";
+      marks += '<div class="rmk' + (x.modal === "ind" ? " ind" : "") + '" data-d="' + x.d + '" style="left:calc(' + dw + '*' + idx(x.d) + ')" title="' + esc(fdl(x.d) + " · " + x.lab + rmod) + '"></div>' +
+        '<div class="rml ' + pos + '" data-d="' + x.d + '" style="left:calc(' + dw + '*' + idx(x.d) + ')">' + esc(x.lab + rmod + " · " + fd(x.d)) + "</div>";
       if (x.own) { if (seenOwn[x.id]) return; seenOwn[x.id] = 1; }
-      rems.push({ d: x.d, mod: M.name, ue: M.path.join(" › "), lab: x.lab, own: x.own, id: x.id });
+      rems.push({ d: x.d, mod: M.name, ue: M.path.join(" › "), lab: x.lab, own: x.own, id: x.id, modal: x.modal });
     });
     var span = "", meta = "";
     if (M.sess.length) {
@@ -577,7 +596,7 @@ function build() {
     html += '<div class="pband" style="left:calc(var(--lw) + ' + dw + '*' + idx(p.s) + ');width:calc(' + dw + '*' + (p.e - p.s + 1) + ');background:var(--pv' + p.k + ')"></div>';
   });
   html += '<div class="todayline" id="today" style="display:none"></div>';
-  return { pers: pers, perTip: perTip, html: html, N: N, d0: d0, exams: exams, rems: rems, mods: mods, order: order, byName: byName, names: Object.keys(byName), flat: flat, gb: gb, types: types, orphan: orphan, nbEx: nbEx };
+  return { anyModal: anyModal, pers: pers, perTip: perTip, html: html, N: N, d0: d0, exams: exams, rems: rems, mods: mods, order: order, byName: byName, names: Object.keys(byName), flat: flat, gb: gb, types: types, orphan: orphan, nbEx: nbEx };
 }
 
 function render() {
@@ -600,7 +619,7 @@ function render() {
     .map(function (t) { return '<span><i class="sw t-' + (TYPES_COURS.indexOf(t) >= 0 ? t : "AUTRE") + '"></i>' + esc(t) + "</span>"; }).join("");
   var perLeg = PER_LABELS.filter(function (l, k) { return B.pers.some(function (p) { return p.k === k; }); })
     .map(function (l) { var k = PER_LABELS.indexOf(l); return '<span><i class="sw" style="background:var(--pv' + k + ');opacity:.75"></i>' + esc(l) + "</span>"; }).join("");
-  $("#legend").innerHTML = leg + perLeg + '<span><i class="sw ex"></i>Examen</span><span><i class="sw rm"></i>Remise de rapport</span>' + (S.showToday ? '<span><i class="sw td"></i>Aujourd’hui</span>' : "");
+  $("#legend").innerHTML = leg + perLeg + (B.anyModal ? '<span><i class="sw ex"></i>Examen collectif</span><span><i class="sw ex ind"></i>Examen individuel</span><span><i class="sw rm"></i>Remise collective</span><span><i class="sw rm ind"></i>Remise individuelle</span>' : '<span><i class="sw ex"></i>Examen</span><span><i class="sw rm"></i>Remise de rapport</span>') + (S.showToday ? '<span><i class="sw td"></i>Aujourd’hui</span>' : "");
 
   var sel = $("#fMod"), keep = sel.value;
   sel.innerHTML = B.flat.map(function (g) {
@@ -617,15 +636,15 @@ function render() {
   B.rems.sort(function (a, b) { return a.d - b.d; });
   $("#rmBody").innerHTML = B.rems.length ? B.rems.map(function (r) {
     return '<tr class="' + (r.d < todayN ? "past" : "") + '"><td class="n">' + fdl(r.d) + "</td><td><b>" + esc(r.mod) + '</b></td><td class="m">' + esc(r.ue) +
-      "</td><td>" + esc(r.lab) + '</td><td><span class="pill ' + (r.own ? "rm" : "file") + '">' + (r.own ? "ajoutée ici" : "fichier") + "</span></td><td class=\"noprint\">" +
+      "</td><td>" + esc(r.lab) + '</td><td class="m">' + (MODAL_LABEL[r.modal] || "—") + '</td><td><span class="pill ' + (r.own ? "rm" : "file") + '">' + (r.own ? "ajoutée ici" : "fichier") + "</span></td><td class=\"noprint\">" +
       (r.own ? '<button class="link" data-del="' + esc(r.id) + '" type="button">Supprimer</button>' : "") + "</td></tr>";
-  }).join("") : '<tr><td colspan="6" class="m">Aucune remise pour l’instant. Ajoutez-en avec le formulaire ci-dessus.</td></tr>';
+  }).join("") : '<tr><td colspan="7" class="m">Aucune remise pour l’instant. Ajoutez-en avec le formulaire ci-dessus.</td></tr>';
 
   B.exams.sort(function (a, b) { return a.d - b.d || (a.deb < b.deb ? -1 : 1); });
   $("#exBody").innerHTML = B.exams.length ? B.exams.map(function (e) {
     return '<tr class="' + (e.d < todayN ? "past" : "") + '"><td class="n">' + fdl(e.d) + '</td><td class="n">' + (e.deb ? e.deb + "–" + e.fin : "") + "</td><td><b>" + esc(e.mod) +
-      '</b></td><td class="m">' + esc(e.ue) + '</td><td><span class="pill">' + (e.typ === "EXAMEN_ECRIT" ? "Écrit" : e.typ === "EXAMEN_ORAL" ? "Oral" : esc(e.typ)) + "</span></td></tr>";
-  }).join("") : '<tr><td colspan="5" class="m">Aucun examen avec les types cochés ci-dessous.</td></tr>';
+      '</b></td><td class="m">' + esc(e.ue) + '</td><td><span class="pill">' + (e.typ === "EXAMEN_ECRIT" ? "Écrit" : e.typ === "EXAMEN_ORAL" ? "Oral" : esc(e.typ)) + '</span></td><td class="m">' + (MODAL_LABEL[e.modal] || "—") + "</td></tr>";
+  }).join("") : '<tr><td colspan="6" class="m">Aucun examen avec les types cochés ci-dessous.</td></tr>';
   var noEx = B.names.filter(function (n) { return !B.exams.some(function (e) { return e.mod === n; }); });
   $("#noExam").textContent = noEx.length ? "Aucun examen dans le fichier pour : " + noEx.join(", ") + "." : "";
 
@@ -663,7 +682,7 @@ function useSheet(ix) {
   if (!sh || !sh.tbl) { showMsg(["Cette feuille ne contient pas de colonnes « Date » et « Module »."]); $("#app").hidden = true; return; }
   var x = extract(sh);
   S.sheetIx = ix; S.recs = x.recs; S.skipped = x.skipped; S.examTypes = null;
-  S.headers = x.headers; S.fields = x.fields; S.map = x.map;
+  S.headers = x.headers; S.fields = x.fields; S.map = x.map; S.modalIdx = x.modalIdx;
   loadTitle();
   S.groupBy = defaultGroupBy(); fillGb();
   render();
@@ -692,6 +711,8 @@ function exportXlsx() {
   var ti = m.type, li = m.lib;
   if (ti == null) { ti = head.length; head.push("Type d'activité"); }
   if (li == null) { li = head.length; head.push("Libellé"); }
+  var mi = S.modalIdx;
+  if (mi < 0 && S.own.some(function (o) { return o.modal; })) { mi = head.length; head.push("Modalité examen"); }
   var n = head.length, serial = function (d) { return d + 25569; }, dcell = function (v) { return { t: "n", v: v, z: "dd/mm/yyyy" }; };
   var aoa = [head];
   S.recs.forEach(function (r) {
@@ -703,7 +724,7 @@ function exportXlsx() {
     var d = parseDate(o.date), list = B.byName[o.module]; if (d == null || !list) return;
     list.forEach(function (M) {
       var row = []; for (var k = 0; k < n; k++) row.push("");
-      row[m.date] = dcell(serial(d)); row[m.module] = o.module; row[ti] = "REMISE"; row[li] = o.label;
+      row[m.date] = dcell(serial(d)); row[m.module] = o.module; row[ti] = "REMISE"; row[li] = o.label; if (mi >= 0) row[mi] = MODAL_LABEL[o.modal] || "";
       B.gb.forEach(function (f, i) { var c = S.headers.indexOf(f); if (c >= 0 && M.path[i] && M.path[i] !== emptyLabel(f)) row[c] = M.path[i]; });
       aoa.push(row);
     });
@@ -811,7 +832,7 @@ $("#addForm").addEventListener("submit", function (e) {
   e.preventDefault();
   var mod = $("#fMod").value, date = $("#fDate").value, lab = $("#fLab").value.trim();
   if (!mod || !date || !lab) return;
-  S.own.push({ id: "r" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), module: mod, date: date, label: lab });
+  S.own.push({ id: "r" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), module: mod, date: date, label: lab, modal: $("#fModal").value });
   lsSet(LS_REM, S.own);
   $("#fLab").value = ""; render();
 });

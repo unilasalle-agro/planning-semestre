@@ -12,6 +12,7 @@ Une ligne par créneau, avec ces colonnes (l'ordre n'a pas d'importance, les acc
 | Date | oui | `jj/mm/aaaa`, `aaaa-mm-jj` ou vraie date Excel |
 | Module | oui | |
 | groupe | non | champ de regroupement par défaut (voir ci-dessous) |
+| modalité examen | non | `Individuel` ou `Collectif` (voir « Examens individuels ou collectifs ») |
 | autres colonnes | non | UE, type d'activité, etc. : disponibles dans « Regrouper par » |
 | Début, Fin, Durée en minutes | non | |
 | Type d'activité | non | CM, TD, TP, AF, EXT, EXAMEN_ECRIT, EXAMEN_ORAL… |
@@ -34,6 +35,14 @@ Par défaut, les modules sont regroupés selon la colonne nommée `groupe` (ou `
 ## Titre
 
 Le champ « Titre » de la barre du haut définit le titre affiché au-dessus du Gantt, repris dans l'image exportée et dans le PDF. Vide, le titre est « Planning de semestre ». Il est mémorisé dans le navigateur pour chaque nom de fichier.
+
+## Examens individuels ou collectifs
+
+Si le fichier contient une colonne dont le nom commence par « modalité » (par exemple `modalité examen`), sa valeur `Individuel` ou `Collectif` (majuscules, accents et féminin ignorés : `individuelle`, `collective`) est appliquée aux examens et aux lignes `REMISE`.
+- **Collectif** : marqueur plein, comme avant. **Individuel** : marqueur en contour (carré rouge pour un examen, losange pour une remise).
+- Une valeur vide ou inconnue donne un marqueur plein et un « — » dans les tableaux : la page ne devine rien.
+- L'étiquette précise la modalité (« Oral · individuel · 18–19 janv. »), et la légende ajoute « Examen individuel » / « Remise individuelle » dès qu'une modalité existe.
+- Le formulaire « Ajouter une remise de rapport » propose une liste Modalité (Non précisée, Individuelle, Collective). L'export .xlsx écrit cette valeur dans la colonne de modalité, qu'il crée (« Modalité examen ») si le fichier n'en avait pas.
 
 ## Ligne « aujourd'hui »
 
