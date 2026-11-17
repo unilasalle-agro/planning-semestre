@@ -39,14 +39,33 @@ Le champ « Titre » de la barre du haut définit le titre affiché au-dessus du
 ## Examens individuels ou collectifs
 
 Si le fichier contient une colonne dont le nom commence par « modalité » (par exemple `modalité examen`), sa valeur `Individuel` ou `Collectif` (majuscules, accents et féminin ignorés : `individuelle`, `collective`) est appliquée aux examens et aux lignes `REMISE`.
-- Les marqueurs sont identiques (rouge plein pour un examen, losange magenta pour une remise). Seul le pictogramme placé devant l'étiquette distingue la modalité : groupe de personnes pour **Collectif**, une personne pour **Individuel** (aucun pictogramme si la modalité est vide). Le texte « individuelle / collective » reste dans l'infobulle et les tableaux.
-- Une valeur vide ou inconnue donne un marqueur plein et un « — » dans les tableaux : la page ne devine rien.
-- La légende explique les deux pictogrammes dès qu'une modalité existe dans les données.
+- Les marqueurs restent pleins et identiques (rouge pour un examen, losange magenta pour une remise). La modalité se lit par un pictogramme dans l'étiquette : une personne pour **Individuel**, un groupe pour **Collectif**. Les mêmes pictogrammes figurent dans les tableaux et dans la légende, et le survol d'un marqueur donne la modalité en toutes lettres.
+- Une valeur vide ou inconnue donne une étiquette sans pictogramme et un « — » dans les tableaux : la page ne devine rien. Si un oral s'étale sur plusieurs jours en mêlant les deux modalités, l'étiquette affiche les deux pictogrammes.
 - Le formulaire « Ajouter une remise de rapport » propose une liste Modalité (Non précisée, Individuelle, Collective). L'export .xlsx écrit cette valeur dans la colonne de modalité, qu'il crée (« Modalité examen ») si le fichier n'en avait pas.
 
 ## Durée des examens
 
 Le tableau « Examens, par date » affiche la durée en minutes : valeur de la colonne « Durée en minutes » si elle existe, sinon calculée à partir des colonnes Début et Fin. « — » si aucune des deux n'est exploitable.
+
+## Ce qui est mémorisé, et par quoi
+
+| Réglage | Séparé par fichier ? |
+|---|---|
+| Remises ajoutées dans la page | oui, par **nom exact** du fichier |
+| Périodes bloquées | oui, par **nom exact** du fichier |
+| Titre du Gantt | oui, par nom exact |
+| Colonnes de suivi | oui, par nom exact du fichier |
+| Regroupement, types d'examen, ligne « aujourd'hui » | non, communs à tous les fichiers |
+
+Conséquence du nom exact : un fichier renommé, ou l'export `..._avec_remises.xlsx`, repart sans remise ajoutée dans la page, ni période bloquée, ni pointage. Les remises ne sont pas perdues pour autant, car l'export les écrit dans le fichier. Les périodes bloquées, elles, ne sont pas dans l'export.
+À la première ouverture après cette mise à jour, les remises et périodes enregistrées auparavant (une liste unique) sont rattachées au premier fichier chargé, avec un message.
+
+## Ajouter des colonnes de suivi (pointage)
+
+Le bloc « Ajouter des colonnes de suivi » permet d'ajouter jusqu'à 6 colonnes nommées par l'utilisateur (par exemple « Fiche saisie », « Salle réservée »). Chaque colonne s'affiche juste après le nom du module, avec une case à cocher par module et, en en-tête, le nombre de modules cochés (« 3/11 »). On peut renommer une colonne, tout décocher ou la supprimer depuis la liste sous le formulaire.
+- Le pointage est mémorisé dans le navigateur, **par fichier** (nom exact) : redéposer le même fichier retrouve son pointage, un fichier renommé ou l'export `_avec_remises` repart sans pointage. Un module cité dans plusieurs groupes se coche partout à la fois.
+- Les colonnes et les cases cochées figurent dans l'image exportée et dans le PDF. Elles ne sont pas écrites dans le .xlsx exporté.
+- Sur téléphone, les colonnes de suivi défilent avec le diagramme au lieu de rester fixes à gauche.
 
 ## Ligne « aujourd'hui »
 
@@ -54,11 +73,11 @@ La case « Ligne « aujourd'hui » » de la barre du haut affiche ou masque la b
 
 ## Périodes bloquées
 
-Le bloc « Périodes bloquées » de la page regroupe deux parties : « Ajouter une période bloquée » (formulaire : début, fin, libellé) et « Gérer les périodes bloquées » (tableau avec suppression). Une période concerne tous les modules : elle marque des périodes qui concernent tous les modules : une bande colorée traverse tout le Gantt, avec son libellé dans une ligne « Périodes bloquées » sous l'en-tête des mois (le Gantt, pas le bloc de réglages). Libellés disponibles : Vacances, Jour férié, Mineure, Période entreprise, Événement (liste `PER_LABELS` au début du script, couleurs `--pv0` à `--pv4` dans le CSS). Les périodes sont mémorisées dans le navigateur, apparaissent dans la légende, l'image et le PDF, mais ne sont pas écrites dans le .xlsx exporté.
+Le formulaire « Ajouter une période bloquée » (début, fin, libellé) marque des périodes qui concernent tous les modules : une bande colorée traverse tout le Gantt, avec son libellé dans une ligne « Périodes bloquées » sous l'en-tête des mois. Libellés disponibles : Vacances, Jour férié, Mineure, Période entreprise, Événement (liste `PER_LABELS` au début du script, couleurs `--pv0` à `--pv4` dans le CSS). Les périodes sont mémorisées dans le navigateur, apparaissent dans la légende, l'image et le PDF, mais ne sont pas écrites dans le .xlsx exporté.
 
 ## Remises de rapports
 
-Le bloc « Remises de rapports » de la page regroupe « Ajouter une remise de rapport » (formulaire : module, date, libellé, modalité) et « Gérer les remises de rapports » (tableau, avec suppression des remises ajoutées ici). Une remise ajoutée est mémorisée dans le navigateur (`localStorage`), sur cet ordinateur seulement.
+Le formulaire de la page ajoute une remise (module, date, libellé). Elle est mémorisée dans le navigateur (`localStorage`), sur cet ordinateur seulement.
 Le bouton « Télécharger le planning avec les remises » produit un .xlsx qui contient ces remises sous forme de lignes `REMISE`. Le redéposer les remet à l'écran, sur n'importe quel ordinateur.
 
 ## Mettre en ligne avec GitHub Pages
@@ -73,7 +92,7 @@ Pour tester en local, ouvrir `index.html` suffit : tout fonctionne hors ligne, s
 
 Le menu « Exporter » propose :
 - **Image PNG** ou **JPEG** : le Gantt seul, avec titre, légende et date d'édition, sur fond blanc quel que soit le thème de la page.
-- **PDF** : ouvre l'impression du navigateur. Une mise en page A4 paysage est prévue (Gantt réduit à la largeur de la page ; les blocs « Périodes bloquées », « Remises de rapports » et « Types d’activité », ainsi que l'en-tête, les formulaires et les boutons, ne sont pas imprimés). Choisir « Enregistrer au format PDF » comme imprimante.
+- **PDF** : ouvre l'impression du navigateur. Une mise en page A4 paysage est prévue (Gantt réduit à la largeur de la page, sans formulaire ni boutons). Choisir « Enregistrer au format PDF » comme imprimante.
 - **Planning avec les remises (.xlsx)**.
 
 ## Contenu

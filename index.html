@@ -14,7 +14,7 @@
   --CM:#25507a; --TD:#4f9bb3; --TP:#8a79c9; --AF:#aab2bf; --EXT:#c19a2e; --AUTRE:#7d8b6a;
   --f-ui:"Schibsted Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;
   --f-num:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
-  --dw:8px; --lw:270px; --rh:68px;
+  --dw:8px; --lw:270px; --rh:68px; --cw:84px;
   --pv0:#5c6b82; --pv1:#b9650d; --pv2:#2e7d4a; --pv3:#1f6fa8; --pv4:#8a3a8a;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
@@ -33,8 +33,6 @@ body { margin:0; background:var(--bg); color:var(--fg); font-family:var(--f-ui);
 .wrap { max-width:1500px; margin:0 auto; display:flex; flex-direction:column; gap:20px }
 h1 { font-size:26px; line-height:1.15; margin:0; font-weight:700; letter-spacing:-.01em; text-wrap:balance }
 h2 { font-size:17px; margin:0 0 8px; font-weight:700 }
-.panel h3 { font-size:14px; font-weight:700; margin:14px 0 8px; color:var(--fg) }
-.panel h2 + h3 { margin-top:6px }
 .sub { margin:6px 0 0; color:var(--muted); max-width:75ch }
 button, select, input { font:inherit; color:inherit }
 .btn { background:var(--accent); color:var(--accentfg); border:0; border-radius:5px; padding:7px 14px; font-weight:500; cursor:pointer }
@@ -71,6 +69,19 @@ button, select, input { font:inherit; color:inherit }
 .bar select:disabled { opacity:.5 }
 .bar input[type="text"] { background:var(--panel); border:1px solid var(--line); border-radius:5px; padding:5px 8px; color:var(--fg); width:min(320px,100%) }
 .chart-title { font-size:20px; line-height:1.2; margin:0; font-weight:700; text-wrap:balance; overflow-wrap:anywhere }
+/* colonnes de suivi : collées à gauche, juste après le nom du module */
+.cc { flex:0 0 var(--cw); position:sticky; left:calc(var(--lw) + var(--cw)*var(--i,0)); z-index:5; background:var(--panel); border-right:1px solid var(--line); display:flex; align-items:center; justify-content:center; min-width:0 }
+.row.grp .cc { background:var(--bg) }
+.row.grp.grp2 .cc { background:var(--panel) }
+.hdr .cc { flex-direction:column; gap:1px; padding:3px 4px; text-align:center; color:var(--muted); line-height:1.15 }
+.hdr .cc b { font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+.hdr .cc small { font-family:var(--f-num); font-size:10px }
+.trk-cb { width:18px; height:18px; margin:0; accent-color:var(--accent); cursor:pointer }
+.cbx { display:inline-block; width:16px; height:16px; border:1.5px solid #5d6878; border-radius:3px; text-align:center; line-height:13px; font-size:13px; font-weight:700; color:#fff }
+.cbx.on { background:#25507a; border-color:#25507a }
+.colchips { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px }
+.chip { display:inline-flex; gap:10px; align-items:center; background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:4px 10px }
+.chip input { background:var(--panel); border:1px solid var(--line); border-radius:4px; padding:3px 6px; color:var(--fg); width:150px; min-width:0 }
 .pband { position:absolute; top:44px; bottom:0; opacity:.22; z-index:3; pointer-events:none }
 .row.per { min-height:0; height:26px }
 .row.per .trk { background:none }
@@ -130,7 +141,7 @@ td.m { color:var(--muted); font-size:12.5px }
 .pill.file { background:var(--span); color:var(--muted) }
 .note { color:var(--muted); font-size:12.5px; margin:8px 0 0; max-width:85ch }
 .link { background:none; border:0; color:var(--accent); cursor:pointer; padding:0; text-decoration:underline }
-@media (max-width:640px) { :root { --lw:150px } h1 { font-size:22px } .lab small { display:none } .row.m1 .lab { padding-left:18px } .row.m2 .lab { padding-left:26px } }
+@media (max-width:640px) { :root { --lw:150px; --cw:64px } .cc { position:static } h1 { font-size:22px } .lab small { display:none } .row.m1 .lab { padding-left:18px } .row.m2 .lab { padding-left:26px } }
 @media (prefers-reduced-motion: no-preference) { .drop { transition:border-color .15s } }
 .menu { position:relative }
 .menu summary { list-style:none; cursor:pointer; user-select:none }
@@ -144,7 +155,7 @@ td.m { color:var(--muted); font-size:12.5px }
   --bg:#f5f6f8; --panel:#ffffff; --fg:#1b2330; --muted:#5d6878; --line:#dfe3ea; --grid:#e6e9ef; --wk:#eef0f4;
   --span:#e3e8f0; --exam:#d42f2b; --examfg:#ffffff; --remise:#a8337f; --remisefg:#ffffff; --today:#0b7a6f;
   --CM:#25507a; --TD:#4f9bb3; --TP:#8a79c9; --AF:#aab2bf; --EXT:#c19a2e; --AUTRE:#7d8b6a; color-scheme:light }
-.force-light .lab { position:relative; left:auto }
+.force-light .lab, .force-light .cc { position:relative; left:auto }
 .force-light .row.grp .lab span { position:static }
 .force-light .hdr { position:relative }
 .exp-title { font-weight:700; font-size:18px; margin:0 0 4px }
@@ -164,7 +175,7 @@ td.m { color:var(--muted); font-size:12.5px }
   h1 { font-size:20px }
   .chart-box { overflow:visible; border:0 }
   .chart { zoom:var(--pz,1) }
-  .lab, .hdr, .row.grp .lab span { position:static }
+  .lab, .cc, .hdr, .row.grp .lab span { position:static }
   .row { break-inside:avoid }
   .todayline { display:none !important }
   section { break-inside:avoid-page }
@@ -215,22 +226,33 @@ td.m { color:var(--muted); font-size:12.5px }
       <p class="note noprint">Chaque colonne est un jour, chaque trait un jour de cours. Survolez un jour pour voir les horaires. « Créneaux » compte les lignes du fichier, groupes parallèles inclus. Les chiffres sous l’axe des mois sont les lundis.</p>
 
       <section class="panel noprint">
-        <h2>Périodes bloquées</h2>
-        <h3>Ajouter une période bloquée</h3>
+        <h2>Ajouter des colonnes de suivi</h2>
+        <form class="add" id="colForm">
+          <label class="f-lab">Nom de la colonne<input id="colName" type="text" maxlength="24" placeholder="Fiche saisie, Salle réservée…" required></label>
+          <button class="btn" type="submit">Ajouter la colonne</button>
+        </form>
+        <div class="colchips" id="colList"></div>
+        <p class="note">Chaque colonne ajoutée s’affiche juste après le nom du module, avec une case à cocher par module et le nombre de modules cochés en en-tête. 6 colonnes au maximum. Le pointage est mémorisé dans ce navigateur pour ce fichier, identifié par son nom exact (un fichier renommé, ou l’export « _avec_remises », repart sans pointage). Il n’est pas écrit dans le .xlsx exporté.</p>
+      </section>
+
+      <section class="panel noprint">
+        <h2>Ajouter une période bloquée</h2>
         <form class="add" id="perForm">
           <label class="f-date">Début<input id="pStart" type="date" required></label>
           <label class="f-date">Fin<input id="pEnd" type="date" required></label>
           <label class="f-lab">Libellé<select id="pLab"></select></label>
           <button class="btn" type="submit">Ajouter</button>
         </form>
-        <p class="note">La période s’applique à tous les modules et s’affiche en bande verticale sur tout le Gantt. Les dates de début et de fin sont incluses. Elle est mémorisée dans ce navigateur, sur cet ordinateur seulement ; elle n’est pas ajoutée au fichier .xlsx exporté.</p>
-        <h3>Gérer les périodes bloquées</h3>
+        <p class="note">La période s’applique à tous les modules et s’affiche en bande verticale sur tout le Gantt. Les dates de début et de fin sont incluses. Elle est mémorisée dans ce navigateur, sur cet ordinateur seulement, pour le fichier chargé (nom exact : un fichier renommé repart sans période) ; elle n’est pas ajoutée au fichier .xlsx exporté.</p>
+      </section>
+
+      <section>
+        <h2>Périodes bloquées</h2>
         <div class="tbl"><table><thead><tr><th>Dates</th><th>Libellé</th><th>Durée</th><th class="noprint"></th></tr></thead><tbody id="perBody"></tbody></table></div>
       </section>
 
       <section class="panel noprint">
-        <h2>Remises de rapports</h2>
-        <h3>Ajouter une remise de rapport</h3>
+        <h2>Ajouter une remise de rapport</h2>
         <form class="add" id="addForm">
           <label class="f-mod">Module<select id="fMod" required></select></label>
           <label class="f-date">Date<input id="fDate" type="date" required></label>
@@ -238,14 +260,17 @@ td.m { color:var(--muted); font-size:12.5px }
           <label class="f-modal">Modalité<select id="fModal"><option value="">Non précisée</option><option value="ind">Individuelle</option><option value="col">Collective</option></select></label>
           <button class="btn" type="submit">Ajouter</button>
         </form>
-        <p class="note">Les remises ajoutées ici sont mémorisées dans ce navigateur, sur cet ordinateur. Pour les conserver ou les partager, téléchargez le planning mis à jour : elles y figurent sur des lignes de type REMISE, que l’application relit au prochain dépôt.</p>
-        <h3>Gérer les remises de rapports</h3>
+        <p class="note">Les remises ajoutées ici sont mémorisées dans ce navigateur, sur cet ordinateur, pour le fichier chargé (nom exact). Pour les conserver ou les partager, téléchargez le planning mis à jour : elles y figurent sur des lignes de type REMISE, que l’application relit au prochain dépôt.</p>
+      </section>
+
+      <section>
+        <h2>Remises de rapports</h2>
         <div class="tbl"><table><thead><tr><th>Date</th><th>Module</th><th>Groupe</th><th>Libellé</th><th>Modalité</th><th>Origine</th><th class="noprint"></th></tr></thead><tbody id="rmBody"></tbody></table></div>
       </section>
 
       <section>
         <h2>Examens, par date</h2>
-        <div class="tbl"><table><thead><tr><th>Date</th><th>Horaire</th><th>Durée (min)</th><th>Module</th><th>Groupe</th><th>Format</th><th>Modalité</th></tr></thead><tbody id="exBody"></tbody></table></div>
+        <div class="tbl"><table><thead><tr><th>Date</th><th>Horaire</th><th>Module</th><th>Groupe</th><th>Format</th><th>Modalité</th><th>Durée (min)</th></tr></thead><tbody id="exBody"></tbody></table></div>
         <p class="note" id="noExam"></p>
       </section>
 
@@ -267,12 +292,16 @@ var MOIS = ["janv.","févr.","mars","avr.","mai","juin","juil.","août","sept.",
 var MOIS_L = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 var JOURS = ["dim.","lun.","mar.","mer.","jeu.","ven.","sam."];
 var TYPES_COURS = ["CM","TD","TP","AF","EXT"];
-var LS_REM = "gantt-semestre:remises";
+var LS_REM = "gantt-semestre:remises";                 /* ancien format : une liste pour tous les fichiers */
+var LS_REM_F = "gantt-semestre:remises-par-fichier";   /* { "nom exact du fichier": [remises] } */
 var LS_EXT = "gantt-semestre:types-examen";
 var LS_GB = "gantt-semestre:regroupement";
 var LS_TITLE = "gantt-semestre:titres";
 var LS_PER = "gantt-semestre:periodes";
+var LS_PER_F = "gantt-semestre:periodes-par-fichier";
 var LS_TODAY = "gantt-semestre:ligne-aujourdhui";
+var LS_TRACK = "gantt-semestre:suivi";
+var MAX_COLS = 6;
 var PER_LABELS = ["Vacances", "Jour férié", "Mineure", "Période entreprise", "Événement"];
 
 var $ = function (s) { return document.querySelector(s); };
@@ -402,14 +431,27 @@ function extract(sheet) {
 }
 
 /* ---------- état ---------- */
-var S = { name: "", book: null, sheetIx: 0, recs: [], skipped: [], examTypes: null, own: [], title: "", headers: [], fields: [], map: {}, modalIdx: -1, groupBy: [] };
+var S = { name: "", book: null, sheetIx: 0, recs: [], skipped: [], examTypes: null, own: [], title: "", track: { cols: [], checks: {} }, headers: [], fields: [], map: {}, modalIdx: -1, groupBy: [] };
 
 function lsGet(k, def) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : def; } catch (e) { return def; } }
 function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
-S.own = lsGet(LS_REM, []);
-S.per = lsGet(LS_PER, []);
+S.own = []; S.per = [];
 S.showToday = lsGet(LS_TODAY, true) !== false;
-if (!Array.isArray(S.per)) S.per = [];
+function lsDel(k) { try { localStorage.removeItem(k); } catch (e) {} }
+function byFile(k) { var o = lsGet(k, {}); return o && typeof o === "object" && !Array.isArray(o) ? o : {}; }
+function saveOwn() { var o = byFile(LS_REM_F); o[S.name] = S.own; lsSet(LS_REM_F, o); }
+function savePer() { var o = byFile(LS_PER_F); o[S.name] = S.per; lsSet(LS_PER_F, o); }
+/* remises et périodes bloquées : une liste par nom exact de fichier */
+function loadFileData() {
+  var r = byFile(LS_REM_F), p = byFile(LS_PER_F);
+  var oldR = lsGet(LS_REM, null), oldP = lsGet(LS_PER, null), parts = [];
+  S.migNote = "";
+  if (Array.isArray(oldR) && oldR.length) { r[S.name] = (r[S.name] || []).concat(oldR); parts.push(oldR.length + " remise(s)"); }
+  if (Array.isArray(oldP) && oldP.length) { p[S.name] = (p[S.name] || []).concat(oldP); parts.push(oldP.length + " période(s) bloquée(s)"); }
+  if (oldR !== null || oldP !== null) { lsSet(LS_REM_F, r); lsSet(LS_PER_F, p); lsDel(LS_REM); lsDel(LS_PER); }
+  if (parts.length) S.migNote = "Les réglages mémorisés avant la séparation par fichier (" + parts.join(" et ") + ") ont été rattachés à ce fichier, « " + S.name + " ». Supprimez ceux qui ne le concernent pas.";
+  S.own = Array.isArray(r[S.name]) ? r[S.name] : []; S.per = Array.isArray(p[S.name]) ? p[S.name] : [];
+}
 
 function isRemiseType(t) { return t === "REMISE" || t === "RAPPORT"; }
 function parseModal(v) {
@@ -443,6 +485,24 @@ function updateTitle() { $("#chartTitle").textContent = titleText(); }
 function loadTitle() {
   var all = lsGet(LS_TITLE, {}); S.title = (all && all[S.name]) || "";
   $("#gtitle").value = S.title; updateTitle();
+}
+function fileKey() { return String(S.name); }
+function loadTrack() {
+  var all = lsGet(LS_TRACK, {}), t = all && typeof all === "object" ? all[fileKey()] : null;
+  S.track = t && Array.isArray(t.cols) ? t : { cols: [], checks: {} };
+  if (!S.track.checks || typeof S.track.checks !== "object") S.track.checks = {};
+}
+function saveTrack() {
+  var all = lsGet(LS_TRACK, {}); if (!all || typeof all !== "object") all = {};
+  all[fileKey()] = S.track; lsSet(LS_TRACK, all);
+}
+function updateCounts() {
+  if (!S.B) return;
+  S.track.cols.forEach(function (c) {
+    var el = document.querySelector('[data-cnt="' + c.id + '"]'); if (!el) return;
+    var ck = S.track.checks[c.id] || {};
+    el.textContent = S.B.names.filter(function (n) { return ck[n]; }).length + "/" + S.B.names.length;
+  });
 }
 function fillGb() {
   var opts = function (sel) { return '<option value="">(aucun)</option>' + S.fields.map(function (f) { return '<option value="' + esc(f) + '"' + (f === sel ? " selected" : "") + ">" + esc(f) + "</option>"; }).join(""); };
@@ -517,13 +577,27 @@ function build() {
   }
   for (var w = 0; w < N / 7; w++) head += '<div class="wk" style="left:calc(' + dw + '*' + (w * 7) + ')">' + ymd(d0 + w * 7).d + "</div>";
 
+  var tc = S.track.cols, nNames = Object.keys(byName).length;
+  var blankCc = function () { return tc.map(function (c, i) { return '<div class="cc" style="--i:' + i + '"></div>'; }).join(""); };
+  var hdrCc = function () {
+    return tc.map(function (c, i) {
+      var ck = S.track.checks[c.id] || {}, n = Object.keys(byName).filter(function (k) { return ck[k]; }).length;
+      return '<div class="cc" style="--i:' + i + '" title="' + esc(c.name) + '"><b>' + esc(c.name) + '</b><small data-cnt="' + esc(c.id) + '">' + n + "/" + nNames + "</small></div>";
+    }).join("");
+  };
+  var modCc = function (M) {
+    return tc.map(function (c, i) {
+      var on = (S.track.checks[c.id] || {})[M.name];
+      return '<div class="cc" style="--i:' + i + '"><input type="checkbox" class="trk-cb" data-c="' + esc(c.id) + '" data-m="' + esc(M.name) + '" aria-label="' + esc(c.name + " : " + M.name) + '"' + (on ? " checked" : "") + "></div>";
+    }).join("");
+  };
   var tw = 'width:calc(' + dw + '*' + N + ')';
   var gl = gb.length ? gb.join(" › ") + " · module" : "Module";
-  var html = '<div class="row hdr"><div class="lab">' + esc(gl) + '</div><div class="trk" style="' + tw + '">' + head + "</div></div>";
+  var html = '<div class="row hdr"><div class="lab">' + esc(gl) + '</div>' + hdrCc() + '<div class="trk" style="' + tw + '">' + head + "</div></div>";
   var exams = [], rems = [], seenOwn = {}, nbEx = 0, anyModal = S.modalIdx >= 0;
   var perTip = function (p) { return p.label + " · " + (p.s === p.e ? fdl(p.s) : "du " + fdl(p.s) + " au " + fdl(p.e)); };
   if (pers.length) {
-    html += '<div class="row per"><div class="lab">Périodes bloquées</div><div class="trk" style="' + tw + '">' + pers.map(function (p) {
+    html += '<div class="row per"><div class="lab">Périodes bloquées</div>' + blankCc() + '<div class="trk" style="' + tw + '">' + pers.map(function (p) {
       var n = p.e - p.s + 1;
       return '<div class="plab" style="left:calc(' + dw + '*' + idx(p.s) + ');width:calc(' + dw + '*' + n + ' - 1px);background:var(--pv' + p.k + ')" title="' + esc(perTip(p)) + '">' + (n * 8 >= p.label.length * 6.6 + 12 ? esc(p.label) : "") + "</div>";
     }).join("") + "</div></div>";
@@ -544,7 +618,7 @@ function build() {
         ty.map(function (t) { return '<i class="t-' + (TYPES_COURS.indexOf(t) >= 0 ? t : "AUTRE") + '"></i>'; }).join("") + "</div>";
       var ex = lst.filter(function (s) { return isEx(s.typ); });
       if (ex.length) {
-        exd.push({ d: d, ex: ex, tip: tip, ind: ex.every(function (s) { return s.modal === "ind"; }) });
+        exd.push({ d: d, ex: ex, tip: tip });
         ex.forEach(function (s) { exams.push({ d: d, deb: s.deb, fin: s.fin, dur: s.dur, typ: s.typ, modal: s.modal, mod: M.name, ue: M.path.join(" › ") }); nbEx++; if (s.modal) anyModal = true; });
       }
     });
@@ -556,17 +630,16 @@ function build() {
       var a = c[0].d, b = c[c.length - 1].d, f = {};
       c.forEach(function (x) { x.ex.forEach(function (s) { f[s.typ === "EXAMEN_ECRIT" ? "Écrit" : s.typ === "EXAMEN_ORAL" ? "Oral" : s.typ] = 1; }); });
       var mm = {}, mset = {}; c.forEach(function (x) { x.ex.forEach(function (s) { if (s.modal) { mm[MODAL_LABEL[s.modal].toLowerCase()] = 1; mset[s.modal] = 1; } }); });
-      var typTxt = Object.keys(f).sort().join("/");
-      var txt = " · " + (a === b ? fd(a) : ymd(a).d + "–" + ymd(b).d + " " + MOIS[ymd(b).m - 1]);
+      var txt = Object.keys(f).sort().join("/") + " · " + (a === b ? fd(a) : ymd(a).d + "–" + ymd(b).d + " " + MOIS[ymd(b).m - 1]);
       var mid = (idx(a) + idx(b)) / 2, pos = mid > N - 14 ? "r" : mid < 6 ? "l" : "c";
-      marks += '<div class="exl ' + pos + '" data-d="' + b + '" style="left:calc(' + dw + '*' + mid + ' + ' + dw + '/2)">' + esc(typTxt) + " " + picOf(mset.ind ? "ind" : "") + picOf(mset.col ? "col" : "") + esc(txt.trim()) + "</div>";
+      marks += '<div class="exl ' + pos + '" data-d="' + b + '" style="left:calc(' + dw + '*' + mid + ' + ' + dw + '/2)">' + picOf(mset.ind ? "ind" : "") + picOf(mset.col ? "col" : "") + esc(txt) + "</div>";
     });
     M.rem.forEach(function (x) {
       var pos = idx(x.d) > N - 14 ? "r" : idx(x.d) < 6 ? "l" : "c";
       if (x.modal) anyModal = true;
       var rmod = x.modal ? " · " + (x.modal === "ind" ? "individuelle" : "collective") : "";
       marks += '<div class="rmk" data-d="' + x.d + '" style="left:calc(' + dw + '*' + idx(x.d) + ')" title="' + esc(fdl(x.d) + " · " + x.lab + rmod) + '"></div>' +
-        '<div class="rml ' + pos + '" data-d="' + x.d + '" style="left:calc(' + dw + '*' + idx(x.d) + ')">' + esc(x.lab) + " " + picOf(x.modal) + esc("· " + fd(x.d)) + "</div>";
+        '<div class="rml ' + pos + '" data-d="' + x.d + '" style="left:calc(' + dw + '*' + idx(x.d) + ')">' + picOf(x.modal) + esc(x.lab + " · " + fd(x.d)) + "</div>";
       if (x.own) { if (seenOwn[x.id]) return; seenOwn[x.id] = 1; }
       rems.push({ d: x.d, mod: M.name, ue: M.path.join(" › "), lab: x.lab, own: x.own, id: x.id, modal: x.modal });
     });
@@ -576,13 +649,13 @@ function build() {
       span = '<div class="span" style="left:calc(' + dw + '*' + idx(f0) + ');width:calc(' + dw + '*' + (l0 - f0 + 1) + ')"></div>';
       meta = M.sess.length + " créneaux · " + fd(f0) + " → " + fd(l0);
     } else meta = "aucun cours dans le fichier";
-    return '<div class="row m' + (M.path.length > 1 ? 2 : 1) + '"><div class="lab"><b>' + esc(M.name) + "</b><small>" + meta + '</small></div><div class="trk" style="' + tw + '">' + span + ticks + marks + "</div></div>";
+    return '<div class="row m' + (M.path.length > 1 ? 2 : 1) + '"><div class="lab"><b>' + esc(M.name) + "</b><small>" + meta + '</small></div>' + modCc(M) + '<div class="trk" style="' + tw + '">' + span + ticks + marks + "</div></div>";
 
   }
   function grpRow(label, cls, ents) {
     var ds = []; ents.forEach(function (M) { M.sess.forEach(function (s) { ds.push(s.d); }); M.rem.forEach(function (x) { ds.push(x.d); }); });
     var a = Math.min.apply(null, ds), b = Math.max.apply(null, ds);
-    return '<div class="row grp' + cls + '"><div class="lab"><span>' + esc(label) + " <em>· " + ents.length + " module" + (ents.length > 1 ? "s" : "") + '</em></span></div><div class="trk" style="' + tw +
+    return '<div class="row grp' + cls + '"><div class="lab"><span>' + esc(label) + " <em>· " + ents.length + " module" + (ents.length > 1 ? "s" : "") + '</em></span></div>' + blankCc() + '<div class="trk" style="' + tw +
       '"><div class="span ue" style="left:calc(' + dw + '*' + idx(a) + ');width:calc(' + dw + '*' + (b - a + 1) + ')"></div></div></div>';
   }
   var tree = {};
@@ -603,7 +676,7 @@ function build() {
     });
   });
   pers.forEach(function (p) {
-    html += '<div class="pband" style="left:calc(var(--lw) + ' + dw + '*' + idx(p.s) + ');width:calc(' + dw + '*' + (p.e - p.s + 1) + ');background:var(--pv' + p.k + ')"></div>';
+    html += '<div class="pband" style="left:calc(var(--lw) + var(--xw, 0px) + ' + dw + '*' + idx(p.s) + ');width:calc(' + dw + '*' + (p.e - p.s + 1) + ');background:var(--pv' + p.k + ')"></div>';
   });
   html += '<div class="todayline" id="today" style="display:none"></div>';
   return { anyModal: anyModal, pers: pers, perTip: perTip, html: html, N: N, d0: d0, exams: exams, rems: rems, mods: mods, order: order, byName: byName, names: Object.keys(byName), flat: flat, gb: gb, types: types, orphan: orphan, nbEx: nbEx };
@@ -615,13 +688,14 @@ function render() {
   $("#app").hidden = false;
   $("#fname").textContent = S.name;
   $("#chart").innerHTML = B.html;
-  $("#chart").style.minWidth = "calc(var(--lw) + var(--dw)*" + B.N + ")";
+  $("#chart").style.setProperty("--xw", S.track.cols.length ? "calc(var(--cw)*" + S.track.cols.length + ")" : "0px");
+  $("#chart").style.minWidth = "calc(var(--lw) + var(--xw) + var(--dw)*" + B.N + ")";
   var cw = $("#chart").scrollWidth;
   $("#chart").style.setProperty("--pz", String(Math.min(1, 1000 / Math.max(cw, 1))));
 
   var todayN = dayOf(new Date().getFullYear(), new Date().getMonth() + 1, new Date().getDate());
   var i = todayN - B.d0, t = $("#today");
-  if (S.showToday && i >= 0 && i < B.N) { t.style.left = "calc(var(--lw) + var(--dw)*" + i + " + var(--dw)/2 - 1px)"; t.style.display = "block"; }
+  if (S.showToday && i >= 0 && i < B.N) { t.style.left = "calc(var(--lw) + var(--xw, 0px) + var(--dw)*" + i + " + var(--dw)/2 - 1px)"; t.style.display = "block"; }
 
   var used = {}; B.order.forEach(function (k) { B.mods[k].sess.forEach(function (s) { used[s.typ] = 1; }); });
   var leg = TYPES_COURS.concat(Object.keys(used).filter(function (t) { return TYPES_COURS.indexOf(t) < 0 && S.examTypes.indexOf(t) < 0; }))
@@ -630,6 +704,10 @@ function render() {
   var perLeg = PER_LABELS.filter(function (l, k) { return B.pers.some(function (p) { return p.k === k; }); })
     .map(function (l) { var k = PER_LABELS.indexOf(l); return '<span><i class="sw" style="background:var(--pv' + k + ');opacity:.75"></i>' + esc(l) + "</span>"; }).join("");
   $("#legend").innerHTML = leg + perLeg + '<span><i class="sw ex"></i>Examen</span><span><i class="sw rm"></i>Remise de rapport</span>' + (B.anyModal ? '<span>' + ICON_IND + 'Individuel</span><span>' + ICON_COL + 'Collectif</span>' : "") + (S.showToday ? '<span><i class="sw td"></i>Aujourd’hui</span>' : "");
+
+  $("#colList").innerHTML = S.track.cols.map(function (c) {
+    return '<span class="chip"><input type="text" maxlength="24" value="' + esc(c.name) + '" data-renc="' + esc(c.id) + '" aria-label="Renommer la colonne"><button class="link" data-clrc="' + esc(c.id) + '" type="button">Tout décocher</button><button class="link" data-delc="' + esc(c.id) + '" type="button">Supprimer</button></span>';
+  }).join("");
 
   var sel = $("#fMod"), keep = sel.value;
   sel.innerHTML = B.flat.map(function (g) {
@@ -652,8 +730,8 @@ function render() {
 
   B.exams.sort(function (a, b) { return a.d - b.d || (a.deb < b.deb ? -1 : 1); });
   $("#exBody").innerHTML = B.exams.length ? B.exams.map(function (e) {
-    return '<tr class="' + (e.d < todayN ? "past" : "") + '"><td class="n">' + fdl(e.d) + '</td><td class="n">' + (e.deb ? e.deb + "–" + e.fin : "") + '</td><td class="n">' + (e.dur != null ? e.dur : "—") + "</td><td><b>" + esc(e.mod) +
-      '</b></td><td class="m">' + esc(e.ue) + '</td><td><span class="pill">' + (e.typ === "EXAMEN_ECRIT" ? "Écrit" : e.typ === "EXAMEN_ORAL" ? "Oral" : esc(e.typ)) + '</span></td><td class="m">' + (e.modal ? picOf(e.modal) : "") + (MODAL_LABEL[e.modal] || "—") + "</td></tr>";
+    return '<tr class="' + (e.d < todayN ? "past" : "") + '"><td class="n">' + fdl(e.d) + '</td><td class="n">' + (e.deb ? e.deb + "–" + e.fin : "") + "</td><td><b>" + esc(e.mod) +
+      '</b></td><td class="m">' + esc(e.ue) + '</td><td><span class="pill">' + (e.typ === "EXAMEN_ECRIT" ? "Écrit" : e.typ === "EXAMEN_ORAL" ? "Oral" : esc(e.typ)) + '</span></td><td class="m">' + (e.modal ? picOf(e.modal) : "") + (MODAL_LABEL[e.modal] || "—") + '</td><td class="n">' + (e.dur != null ? e.dur : "—") + "</td></tr>";
   }).join("") : '<tr><td colspan="7" class="m">Aucun examen avec les types cochés ci-dessous.</td></tr>';
   var noEx = B.names.filter(function (n) { return !B.exams.some(function (e) { return e.mod === n; }); });
   $("#noExam").textContent = noEx.length ? "Aucun examen dans le fichier pour : " + noEx.join(", ") + "." : "";
@@ -663,6 +741,7 @@ function render() {
   }).join("");
 
   var notes = [];
+  if (S.migNote) notes.push(S.migNote);
   if (S.skipped.length) notes.push(S.skipped.length + " ligne(s) ignorée(s) car sans date lisible ou sans module (lignes " + S.skipped.slice(0, 8).join(", ") + (S.skipped.length > 8 ? "…" : "") + ").");
   var hasG = S.fields.some(isGroupeField);
   if (!hasG && !B.gb.length) notes.push("Aucune colonne « groupe » dans ce fichier : les modules ne sont pas regroupés. Choisissez un autre champ avec « Regrouper par ».");
@@ -693,7 +772,7 @@ function useSheet(ix) {
   var x = extract(sh);
   S.sheetIx = ix; S.recs = x.recs; S.skipped = x.skipped; S.examTypes = null;
   S.headers = x.headers; S.fields = x.fields; S.map = x.map; S.modalIdx = x.modalIdx;
-  loadTitle();
+  loadTitle(); loadTrack(); loadFileData();
   S.groupBy = defaultGroupBy(); fillGb();
   render();
 }
@@ -759,6 +838,10 @@ function exportImage(fmt) {
   var ch = $("#chart").cloneNode(true); ch.removeAttribute("id"); ch.style.zoom = "1";
   var td = ch.querySelector("#today"); if (td) td.removeAttribute("id");
   ch.style.border = "1px solid #dfe3ea";
+  ch.querySelectorAll(".trk-cb").forEach(function (cb) {
+    var sp = document.createElement("span"); sp.className = "cbx" + (cb.checked ? " on" : ""); sp.textContent = cb.checked ? "✓" : "";
+    cb.parentNode.replaceChild(sp, cb);
+  });
   /* html2canvas ne dessine pas les dégradés répétés : on remplace la grille par des bandes */
   ch.querySelectorAll(".row:not(.hdr):not(.per) .trk").forEach(function (trk) {
     trk.style.background = "none";
@@ -812,12 +895,12 @@ $("#perForm").addEventListener("submit", function (e) {
   if (!a || !b) return;
   if (b < a) { showMsg(["La date de fin précède la date de début."]); return; }
   S.per.push({ id: "p" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), start: a, end: b, label: l });
-  lsSet(LS_PER, S.per); $("#pStart").value = ""; $("#pEnd").value = ""; render();
+  savePer(); $("#pStart").value = ""; $("#pEnd").value = ""; render();
 });
 document.addEventListener("click", function (e) {
   var id = e.target && e.target.getAttribute && e.target.getAttribute("data-delp");
   if (!id) return;
-  S.per = S.per.filter(function (p) { return p.id !== id; }); lsSet(LS_PER, S.per); render();
+  S.per = S.per.filter(function (p) { return p.id !== id; }); savePer(); render();
 });
 $("#showToday").checked = S.showToday;
 $("#showToday").addEventListener("change", function (e) { S.showToday = e.target.checked; lsSet(LS_TODAY, S.showToday); render(); });
@@ -843,13 +926,13 @@ $("#addForm").addEventListener("submit", function (e) {
   var mod = $("#fMod").value, date = $("#fDate").value, lab = $("#fLab").value.trim();
   if (!mod || !date || !lab) return;
   S.own.push({ id: "r" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), module: mod, date: date, label: lab, modal: $("#fModal").value });
-  lsSet(LS_REM, S.own);
+  saveOwn();
   $("#fLab").value = ""; render();
 });
 document.addEventListener("click", function (e) {
   var id = e.target && e.target.getAttribute && e.target.getAttribute("data-del");
   if (!id) return;
-  S.own = S.own.filter(function (o) { return o.id !== id; }); lsSet(LS_REM, S.own); render();
+  S.own = S.own.filter(function (o) { return o.id !== id; }); saveOwn(); render();
 });
 document.addEventListener("change", function (e) {
   var t = e.target && e.target.getAttribute && e.target.getAttribute("data-ty");
@@ -860,6 +943,44 @@ document.addEventListener("change", function (e) {
   var all = S.B.types, saved = S.examTypes.slice();
   all.forEach(function (x) { if (/^EXAMEN/.test(x) && S.examTypes.indexOf(x) < 0) saved.push("!" + x); });
   lsSet(LS_EXT, saved); render();
+});
+$("#colForm").addEventListener("submit", function (e) {
+  e.preventDefault();
+  var name = $("#colName").value.trim();
+  if (!name) return;
+  if (S.track.cols.length >= MAX_COLS) { showMsg(["Maximum " + MAX_COLS + " colonnes de suivi : supprimez-en une pour en ajouter."]); return; }
+  S.track.cols.push({ id: "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 4), name: name });
+  saveTrack(); $("#colName").value = ""; render();
+});
+document.addEventListener("change", function (e) {
+  var t = e.target; if (!t || !t.getAttribute) return;
+  if (t.classList.contains("trk-cb")) {
+    var c = t.getAttribute("data-c"), m = t.getAttribute("data-m");
+    var ck = S.track.checks[c] = S.track.checks[c] || {};
+    if (t.checked) ck[m] = true; else delete ck[m];
+    document.querySelectorAll(".trk-cb").forEach(function (o) { if (o.getAttribute("data-c") === c && o.getAttribute("data-m") === m) o.checked = t.checked; });
+    saveTrack(); updateCounts(); return;
+  }
+  var rid = t.getAttribute("data-renc");
+  if (rid) {
+    var nm = t.value.trim(), col = S.track.cols.filter(function (x) { return x.id === rid; })[0];
+    if (col && nm) { col.name = nm; saveTrack(); }
+    render();
+  }
+});
+document.addEventListener("click", function (e) {
+  var t = e.target; if (!t || !t.getAttribute) return;
+  var del = t.getAttribute("data-delc"), clr = t.getAttribute("data-clrc");
+  if (!del && !clr) return;
+  var id = del || clr, col = S.track.cols.filter(function (x) { return x.id === id; })[0]; if (!col) return;
+  if (del) {
+    if (!window.confirm("Supprimer la colonne « " + col.name + " » et son pointage ?")) return;
+    S.track.cols = S.track.cols.filter(function (x) { return x.id !== id; }); delete S.track.checks[id];
+  } else {
+    if (!window.confirm("Décocher tous les modules de la colonne « " + col.name + " » ?")) return;
+    S.track.checks[id] = {};
+  }
+  saveTrack(); render();
 });
 window.__gantt = { S: S, load: load };
 })();
